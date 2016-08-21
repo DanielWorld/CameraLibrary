@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.danielpark.camerasample">
+
+    <!-- To use Camera API -->
+    <!-- https://developer.android.com/reference/android/hardware/Camera.html -->
+    <!-- https://developer.android.com/guide/topics/media/camera.html -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <!-- The app uses the device's back-facing camera. Devices with only a front-facing camera do not list this feature,
+    so use the android.hardware.camera.any feature instead if your app can communicate with any camera,
+    regardless of which direction the camera faces. -->
+    <uses-feature android:name="android.hardware.camera" android:required="false"/>
+    <uses-feature android:name="android.hardware.camera.autofocus" />
+    <!-- To save images to the device's external storage -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+
+
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/AppTheme">
+        <activity android:name=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+
+</manifest>
