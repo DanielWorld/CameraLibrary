@@ -1,8 +1,12 @@
 package com.danielpark.camera;
 
+import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.hardware.Camera;
+import android.os.Build;
+
+import java.io.IOException;
 
 /**
  * Check if the device support Camera feature <br>
@@ -26,10 +30,19 @@ public class CameraApiChecker {
     /**
      * Start proceed Camera feature
      */
-    public void build(Context context) {
+    public void build(Context context) throws IOException {
 
         if (!checkCameraHardware(context))
             throw new UnsupportedOperationException("No camera on this device!");
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && context.checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED)
+            throw new IOException("No CAMERA permission!");
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && context.checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED)
+            throw new IOException("No READ_EXTERNAL_STORAGE permission!");
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && context.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED)
+            throw new IOException("No WRITE_EXTERNAL_STORAGE permission!");
     }
 
     /** Check if this device has a camera */
