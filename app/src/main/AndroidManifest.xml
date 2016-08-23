@@ -29,6 +29,8 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <activity android:name="com.danielpark.camera.CameraApi1Activity"/>
     </application>
 
 </manifest>

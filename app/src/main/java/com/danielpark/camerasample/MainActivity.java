@@ -1,15 +1,15 @@
 package com.danielpark.camerasample;
 
 import android.Manifest;
+import android.content.Intent;
 import android.os.Build;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.widget.FrameLayout;
 import android.widget.Toast;
 
+import com.danielpark.camera.CameraApi1Activity;
 import com.danielpark.camera.CameraApiChecker;
-import com.danielpark.camera.CameraPreview;
 import com.danielpark.camera.util.CameraLogger;
 
 import java.io.IOException;
@@ -29,8 +29,8 @@ public class MainActivity extends AppCompatActivity {
         try {
             CameraApiChecker.getInstance().build(this);
 
-            FrameLayout camera_preview = (FrameLayout) findViewById(R.id.camera_preview);
-            camera_preview.addView(new CameraPreview(this));
+            Intent intent = new Intent(this, CameraApi1Activity.class);
+            startActivity(intent);
 
         } catch (UnsupportedOperationException e){
             Toast.makeText(MainActivity.this, e.getMessage(), Toast.LENGTH_SHORT).show();
@@ -51,4 +51,5 @@ public class MainActivity extends AppCompatActivity {
 
         // TODO: You can build logic later
     }
+
 }
