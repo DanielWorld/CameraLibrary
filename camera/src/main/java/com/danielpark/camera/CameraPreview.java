@@ -6,6 +6,8 @@ import android.os.Build;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
+import com.danielpark.camera.util.Logger;
+
 import java.util.List;
 
 /**
@@ -13,6 +15,8 @@ import java.util.List;
  * Created by Daniel Park on 2016-08-21.
  */
 public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback {
+
+    private Logger LOG = Logger.getInstance();
 
     private SurfaceHolder mHolder;
     private Camera mCamera;
@@ -33,6 +37,8 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
 
     @Override
     public void surfaceCreated(SurfaceHolder surfaceHolder) {
+        LOG.d("surfaceCreated()");
+
         // The Surface has been created, now open the Camera and tell the camera where to draw the preview.
         try {
             mCamera = Camera.open();
@@ -45,6 +51,8 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
 
     @Override
     public void surfaceChanged(SurfaceHolder surfaceHolder, int format, int width, int height) {
+        LOG.d("surfaceChanged() : " + width + " / " + height);
+
         // If your preview can change or rotate, take care of those events here.
         // Make sure to stop the preview before resizing or reformatting it.
 
@@ -88,6 +96,8 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
 
     @Override
     public void surfaceDestroyed(SurfaceHolder surfaceHolder) {
+        LOG.d("surfaceDestroyed()");
+        
         if (mCamera != null)
             mCamera.release();
     }

@@ -7,6 +7,7 @@ import android.widget.Toast;
 
 import com.danielpark.camera.CameraApiChecker;
 import com.danielpark.camera.CameraPreview;
+import com.danielpark.camera.util.CameraLogger;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -15,6 +16,9 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        // Daniel (2016-08-23 10:45:00): Turn on CameraLogger Log switch
+        CameraLogger.enable();
 
         FrameLayout camera_preview = (FrameLayout) findViewById(R.id.camera_preview);
         camera_preview.addView(new CameraPreview(this));
