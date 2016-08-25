@@ -1,31 +1,32 @@
 package com.danielpark.camera;
 
-import android.app.Activity;
 import android.content.Context;
 import android.content.res.Configuration;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Matrix;
 import android.graphics.Point;
 import android.graphics.RectF;
 import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
-import android.os.Build;
-import android.util.SparseArray;
+import android.os.Environment;
+import android.util.Log;
 import android.util.SparseIntArray;
 import android.view.Surface;
-import android.view.SurfaceHolder;
-import android.view.SurfaceView;
 import android.view.TextureView;
 import android.view.WindowManager;
-import android.widget.TextView;
 
 import com.danielpark.camera.util.AutoFitTextureView;
-import com.danielpark.camera.util.DeviceUtil;
-import com.danielpark.camera.util.Logger;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -38,6 +39,7 @@ public class CameraPreview extends AutoFitTextureView{
 
     private Camera mCamera;
     private Camera.Size mPreviewSize;
+    private Camera.Size mPictureSize;
     private int mSensorOrientation;
 
     private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
@@ -49,7 +51,7 @@ public class CameraPreview extends AutoFitTextureView{
         ORIENTATIONS.append(Surface.ROTATION_270, 270);
     }
 
-    public CameraPreview(Activity context) {
+    public CameraPreview(Context context) {
         super(context);
 
         setSurfaceTextureListener(mSurfaceTextureListener);
@@ -82,7 +84,6 @@ public class CameraPreview extends AutoFitTextureView{
 
     private void openCamera(SurfaceTexture surfaceTexture, int width, int height) {
         LOG.d("openCamera() : " + width + " , " + height);
-
 //        if (mCamera == null)
             mCamera = Camera.open();
 
@@ -100,13 +101,20 @@ public class CameraPreview extends AutoFitTextureView{
         LOG.d("setupCameraOutput() : " + width + " , " + height);
 
         // 1. Get the largest supported preview size
-        Camera.Size largest = Collections.max(
+        Camera.Size largestPreviewSize = Collections.max(
                 mCamera.getParameters().getSupportedPreviewSizes(),
                 new CompareSizesByArea());
 
-        LOG.d("1. Largest preview size : " + largest.width + " , " + largest.height);
+        LOG.d("1. Largest preview size : " + largestPreviewSize.width + " , " + largestPreviewSize.height);
 
-        // 2. Get Camera orientation to fix rotation problem
+        // 2. Get the largest supported picture size
+        Camera.Size largestPictureSize = Collections.max(
+                mCamera.getParameters().getSupportedPictureSizes(),
+                new CompareSizesByArea());
+
+        LOG.d("2. Largest Picture size (Not preview size) : " + largestPictureSize.width + " , " + largestPictureSize.height);
+
+        // 3. Get Camera orientation to fix rotation problem
         // Find out if we need to swap dimension to get the preview size relative to sensor
         // coordinate.
         // https://developer.android.com/reference/android/hardware/Camera.CameraInfo.html
@@ -117,15 +125,15 @@ public class CameraPreview extends AutoFitTextureView{
         Camera.CameraInfo cameraInfo = new Camera.CameraInfo();
         Camera.getCameraInfo(Camera.CameraInfo.CAMERA_FACING_BACK, cameraInfo);
         mSensorOrientation = cameraInfo.orientation;
-        LOG.d("2. Camera Lens orientation : " + mSensorOrientation);
+        LOG.d("3. Camera Lens orientation : " + mSensorOrientation);
         mCamera.setDisplayOrientation(mSensorOrientation);
 
-        // 3. Get current display rotation
+        // 4. Get current display rotation
         WindowManager windowManager = (WindowManager) getContext().getSystemService(Context.WINDOW_SERVICE);
         int displayRotation = windowManager.getDefaultDisplay().getRotation();
-        LOG.d("3. Current device rotation : " + ORIENTATIONS.get(displayRotation));
+        LOG.d("4. Current device rotation : " + ORIENTATIONS.get(displayRotation));
 
-        // 4. Check if dimensions should be swapped
+        // 5. Check if dimensions should be swapped
         boolean swappedDimensions = false;
         switch (displayRotation) {
             case Surface.ROTATION_0:
@@ -141,9 +149,9 @@ public class CameraPreview extends AutoFitTextureView{
                 }
                 break;
         }
-        LOG.d("4. is Dimension swapped? : " + swappedDimensions);
+        LOG.d("5. is Dimension swapped? : " + swappedDimensions);
 
-        // 5. Get device resolution max size
+        // 6. Get device resolution max size
         Point resolutionSize = new Point();
         windowManager.getDefaultDisplay().getSize(resolutionSize);
 
@@ -158,24 +166,30 @@ public class CameraPreview extends AutoFitTextureView{
             maxPreviewWidth = resolutionSize.y;
             maxPreviewHeight = resolutionSize.x;
         }
-        LOG.d("5. Resolution Size : " + resolutionSize.x + " , " + resolutionSize.y);
+        LOG.d("6. Resolution Size : " + resolutionSize.x + " , " + resolutionSize.y);
 
-        // 6. choose Optimal preview size!
+        // 7. choose Optimal preview size!
         mPreviewSize = chooseOptimalSize(mCamera.getParameters().getSupportedPreviewSizes(),
                 rotatedPreviewWidth, rotatedPreviewHeight, maxPreviewWidth, maxPreviewHeight,
-                largest);
-        LOG.d("6. Optimal Preview size : " + mPreviewSize.width + " , " + mPreviewSize.height);
+                largestPreviewSize);
+        LOG.d("7. Optimal Preview size : " + mPreviewSize.width + " , " + mPreviewSize.height);
 
-        // 7. According to orientation, change SurfaceView size
+        // 8. choose Optimal Picture size!
+        mPictureSize = chooseOptimalSize(mCamera.getParameters().getSupportedPictureSizes(),
+                rotatedPreviewWidth, rotatedPreviewHeight, maxPreviewWidth, maxPreviewHeight,
+                largestPictureSize);
+        LOG.d("8. Optimal Picture size : " + mPictureSize.width + " , " + mPictureSize.height);
+
+        // 9. According to orientation, change SurfaceView size
         int orientation = getResources().getConfiguration().orientation;
         if (orientation == Configuration.ORIENTATION_PORTRAIT) {
-            LOG.d("7. Orientation PORTRAIT : height - width");
-//            setAspectRatio(
-//                    mPreviewSize.height, mPreviewSize.width);
+            LOG.d("9. Orientation PORTRAIT : height - width");
+            setAspectRatio(
+                    mPreviewSize.height, mPreviewSize.width);
         } else if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
-            LOG.d("7, Orientation LANDSCAPE : width - height");
-//            setAspectRatio(
-//                    mPreviewSize.width, mPreviewSize.height);
+            LOG.d("9, Orientation LANDSCAPE : width - height");
+            setAspectRatio(
+                    mPreviewSize.width, mPreviewSize.height);
         }
     }
 
@@ -191,13 +205,10 @@ public class CameraPreview extends AutoFitTextureView{
         if (null == mPreviewSize)
             return;
 
-        LOG.d("configureTransform : " + viewWidth + " / " + viewHeight);
-
-//        int rotation = get
+        LOG.d("configureTransform () : " + viewWidth + " , " + viewHeight);
 
         // If your preview can change or rotate, take care of those events here.
         // Make sure to stop the preview before resizing or reformatting it.
-
         if (surfaceTexture == null) {
             // preview surface does not exist
             return;
@@ -209,11 +220,6 @@ public class CameraPreview extends AutoFitTextureView{
         } catch (Exception ignored){
             // ignore: tried to stop a non-existent preview
         }
-
-        // 1. 해당 카메라 type 체크 (Back or Front)
-        // 2. 현재는 Back 일 경우에만 지원할 예정
-        // 2-1. 해당 Camera Info orientation + 기기의 orientation + surfaceHolder size 로 최적의 preview size 및 orientation 을 찾아서 적용하면 된다.
-        // 3. onMeasure() 로 처리할 지 여부는 추후 처리할 예정.
 
         // Set preview size and make any resize, rotate or
         // reformatting changes here
@@ -242,10 +248,16 @@ public class CameraPreview extends AutoFitTextureView{
             }
             setTransform(matrix);
 
-            LOG.d("8. Set preview size : " + mPreviewSize.width + " , " + mPreviewSize.height);
-            // Daniel (2016-08-24 12:27:46): set preview size
+            // 10. Set preview size
             Camera.Parameters mParameters = mCamera.getParameters();
             mParameters.setPreviewSize(mPreviewSize.width, mPreviewSize.height);
+            LOG.d("10. Set preview size : " + mPreviewSize.width + " , " + mPreviewSize.height);
+
+            // 11. Set Picture size & format
+            mParameters.setPictureSize(mPictureSize.width, mPictureSize.height);
+//            mParameters.setPictureFormat(PixelFormat.JPEG);
+            LOG.d("11. Set Picture size : " + mPictureSize.width + " , " + mPictureSize.height);
+
             mCamera.setParameters(mParameters);
 
             mCamera.setPreviewTexture(surfaceTexture);
@@ -303,15 +315,79 @@ public class CameraPreview extends AutoFitTextureView{
         }
     }
 
-    public void autoFocus(){
+    @Override
+    public void autoFocus() {
+        super.autoFocus();
         if (mCamera != null) {
             mCamera.autoFocus(new Camera.AutoFocusCallback() {
                 @Override
-                public void onAutoFocus(boolean b, Camera camera) {
-
+                public void onAutoFocus(boolean success, Camera camera) {
+                    LOG.d("onAutoFocus() : " + success);
                 }
             });
         }
+    }
+
+    @Override
+    public void takePicture() {
+        super.takePicture();
+        if (mCamera != null)
+            mCamera.takePicture(null, null, new Camera.PictureCallback() {
+                @Override
+                public void onPictureTaken(byte[] bytes, Camera camera) {
+                    if (bytes != null) {
+                        Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
+                        Bitmap rotatedBitmap = rotateImage(bitmap, mSensorOrientation);
+
+                        File pictureFile = getOutputMediaFile();
+                        if (pictureFile == null) {
+                            return;
+                        }
+                        try {
+                            FileOutputStream fos = new FileOutputStream(pictureFile);
+                            rotatedBitmap.compress(Bitmap.CompressFormat.JPEG, 95, fos);
+                            fos.close();
+                        } catch (FileNotFoundException e) {
+
+                        } catch (IOException e) {
+                        } finally {
+                            LOG.d("File path : " + pictureFile.getAbsolutePath());
+                        }
+                    }
+                }
+            });
+    }
+
+    private Bitmap rotateImage(Bitmap bitmap, int degrees) {
+        Matrix matrix = new Matrix();
+        matrix.postRotate(degrees);
+
+        Bitmap rotatedBitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
+        // TODO: Check if it is okay to recycle!!
+        if (bitmap != null && bitmap != rotatedBitmap && !bitmap.isRecycled())
+            bitmap.recycle();
+
+        return rotatedBitmap;
+    }
+    private static File getOutputMediaFile() {
+        File mediaStorageDir = new File(
+                Environment
+                        .getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES),
+                "CameraLibrary");
+        if (!mediaStorageDir.exists()) {
+            if (!mediaStorageDir.mkdirs()) {
+                Log.d("CameraLogger", "failed to create directory");
+                return null;
+            }
+        }
+        // Create a media file name
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss")
+                .format(new Date());
+        File mediaFile;
+        mediaFile = new File(mediaStorageDir.getPath() + File.separator
+                + "IMG_" + timeStamp + ".jpg");
+
+        return mediaFile;
     }
 
     /**
@@ -320,8 +396,11 @@ public class CameraPreview extends AutoFitTextureView{
     public void releaseCamera() {
         if (mCamera != null) {
             LOG.d("Release Camera");
-
+            // Call stopPreview() to stop updating the preview surface.
 //            mCamera.stopPreview();
+            // Important: Call release() to release the camera for use by other
+            // applications. Applications should release the camera immediately
+            // during onPause() and re-open() it during onResume()).
             mCamera.release();
         }
     }

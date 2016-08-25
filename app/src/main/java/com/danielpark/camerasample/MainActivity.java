@@ -1,57 +1,51 @@
 package com.danielpark.camerasample;
 
 import android.Manifest;
-import android.content.Intent;
 import android.os.Build;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.view.Gravity;
 import android.view.View;
+import android.widget.Button;
 import android.widget.FrameLayout;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.danielpark.camera.CameraApi1Activity;
 import com.danielpark.camera.CameraApiChecker;
-import com.danielpark.camera.CameraPreview;
-import com.danielpark.camera.CameraSurfacePreview;
+import com.danielpark.camera.util.AutoFitTextureView;
 import com.danielpark.camera.util.CameraLogger;
 
 import java.io.IOException;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
     final int REQUEST_PERMISSION = 1001;
 
-//    CameraSurfacePreview cameraPreview;
-    CameraPreview cameraPreview;
+    AutoFitTextureView cameraPreview;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        TextView bottomView = (TextView) findViewById(R.id.bottomView);
-        bottomView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                cameraPreview.autoFocus();
-            }
-        });
+        FrameLayout containerView = (FrameLayout) findViewById(R.id.container);
+        TextView topView = (TextView) findViewById(R.id.topView);
+        RelativeLayout bottomView = (RelativeLayout) findViewById(R.id.bottomView);
+        Button button = (Button) findViewById(R.id.autoFocusBtn);
+        Button button2 = (Button) findViewById(R.id.takePictureBtn);
+
+        button.setOnClickListener(this);
+        button2.setOnClickListener(this);
 
         // Daniel (2016-08-23 10:45:00): Turn on CameraLogger Log switch
         CameraLogger.enable();
 
         try {
-            CameraApiChecker.getInstance().build(this);
+            cameraPreview =  CameraApiChecker.getInstance().build(this);
+            containerView.addView(cameraPreview);
 
-//            Intent intent = new Intent(this, CameraApi1Activity.class);
-//            startActivity(intent);
-
-            FrameLayout f = (FrameLayout) findViewById(R.id.container);
-//            cameraPreview = new CameraSurfacePreview(this);
-            cameraPreview = new CameraPreview(this);
-            f.addView(cameraPreview);
 
         } catch (UnsupportedOperationException e){
             Toast.makeText(MainActivity.this, e.getMessage(), Toast.LENGTH_SHORT).show();
@@ -71,5 +65,19 @@ public class MainActivity extends AppCompatActivity {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
 
         // TODO: You can build logic later
+    }
+
+    @Override
+    public void onClick(View view) {
+        final int id = view.getId();
+
+        switch (id){
+            case R.id.autoFocusBtn:
+                cameraPreview.autoFocus();
+                break;
+            case R.id.takePictureBtn:
+                cameraPreview.takePicture();
+                break;
+        }
     }
 }

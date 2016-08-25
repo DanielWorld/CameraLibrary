@@ -6,6 +6,8 @@ import android.content.pm.PackageManager;
 import android.hardware.Camera;
 import android.os.Build;
 
+import com.danielpark.camera.util.AutoFitTextureView;
+
 import java.io.IOException;
 
 /**
@@ -30,7 +32,7 @@ public class CameraApiChecker {
     /**
      * Start proceed Camera feature
      */
-    public void build(Context context) throws IOException {
+    public AutoFitTextureView build(Context context) throws IOException {
 
         if (!checkCameraHardware(context))
             throw new UnsupportedOperationException("No camera on this device!");
@@ -43,6 +45,8 @@ public class CameraApiChecker {
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && context.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED)
             throw new IOException("No WRITE_EXTERNAL_STORAGE permission!");
+
+        return new CameraPreview(context);
     }
 
     /** Check if this device has a camera */
@@ -51,7 +55,7 @@ public class CameraApiChecker {
             // this device has a camera
             int numCameras = Camera.getNumberOfCameras();
 
-            return true;
+            return numCameras > 0;
         } else {
             // no camera on this device
             return false;

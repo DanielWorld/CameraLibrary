@@ -1,10 +1,15 @@
 package com.danielpark.camera.util;
 
 import android.content.Context;
+import android.support.annotation.CallSuper;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.TextureView;
+import android.view.View;
+import android.view.ViewGroup;
+
+import com.danielpark.camera.listeners.ControlInterface;
 
 /**
  * A {@link TextureView} that can be adjusted to a specified aspect ratio.
@@ -12,7 +17,7 @@ import android.view.TextureView;
  * Copyright (C) 2014-2016 daniel@bapul.net
  * Created by Daniel on 2016-08-23.
  */
-public class AutoFitTextureView extends TextureView {
+public class AutoFitTextureView extends TextureView implements ControlInterface{
 
     protected Logger LOG = Logger.getInstance();
 
@@ -65,5 +70,15 @@ public class AutoFitTextureView extends TextureView {
                 setMeasuredDimension(height * mRatioWidth / mRatioHeight, height);
             }
         }
+    }
+
+    @Override
+    public void autoFocus() {
+
+    }
+
+    @Override
+    public void takePicture() {
+
     }
 }
