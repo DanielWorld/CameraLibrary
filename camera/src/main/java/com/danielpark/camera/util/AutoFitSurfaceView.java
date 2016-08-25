@@ -3,32 +3,31 @@ package com.danielpark.camera.util;
 import android.content.Context;
 import android.util.AttributeSet;
 import android.util.Log;
-import android.view.Gravity;
-import android.view.TextureView;
+import android.view.SurfaceView;
 
 /**
- * A {@link TextureView} that can be adjusted to a specified aspect ratio.
+ * A {@link SurfaceView} that can be adjusted to a specified aspect ratio
  * <br><br>
  * Copyright (C) 2014-2016 daniel@bapul.net
- * Created by Daniel on 2016-08-23.
+ * Created by Daniel on 2016-08-25.
  */
-public class AutoFitTextureView extends TextureView {
+public class AutoFitSurfaceView extends SurfaceView {
 
     protected Logger LOG = Logger.getInstance();
 
     private int mRatioWidth = 0;
     private int mRatioHeight = 0;
 
-    public AutoFitTextureView(Context context) {
-        this(context, null);
+    public AutoFitSurfaceView(Context context) {
+        super(context, null);
     }
 
-    public AutoFitTextureView(Context context, AttributeSet attrs) {
-        this(context, attrs, 0);
+    public AutoFitSurfaceView(Context context, AttributeSet attrs) {
+        super(context, attrs, 0);
     }
 
-    public AutoFitTextureView(Context context, AttributeSet attrs, int defStyle) {
-        super(context, attrs, defStyle);
+    public AutoFitSurfaceView(Context context, AttributeSet attrs, int defStyleAttr) {
+        super(context, attrs, defStyleAttr);
     }
 
     /**

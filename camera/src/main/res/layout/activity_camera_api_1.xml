@@ -3,10 +3,18 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
+    <TextView
+        android:id="@+id/tvBottom"
+        android:layout_width="match_parent"
+        android:layout_height="80dp"
+        android:text="WOW"
+        android:layout_alignParentBottom="true"/>
+
     <!-- Daniel (2016-08-23 17:01:25): Camera API 1 auto fit TextureView -->
     <com.danielpark.camera.util.AutoFitTextureView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:id="@+id/cameraPreview"/>
+        android:id="@+id/cameraPreview"
+        android:layout_above="@+id/tvBottom"/>
 
 </RelativeLayout>

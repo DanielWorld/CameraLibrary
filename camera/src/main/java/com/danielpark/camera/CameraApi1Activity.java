@@ -126,115 +126,6 @@ public class CameraApi1Activity extends AppCompatActivity {
     }
 
     /**
-     * Sets up member variables related to camera.
-     *
-     * @param width  The width of available size for camera preview
-     * @param height The height of available size for camera preview
-     */
-    private void setUpCameraOutput(int width, int height) {
-        LOG.d("setUpCameraOutput : " + width + " / " + height);
-
-        // TODO: 1. 해당 카메라 및 Back camera 지원여부 체크.. 나중에!
-
-        // For still image captures, we use the largest available size.
-        Camera.Size largest = Collections.max(
-                mCamera.getParameters().getSupportedPreviewSizes(),
-                new CompareSizesByArea());
-
-        Camera.CameraInfo cameraInfo = new Camera.CameraInfo();
-        Camera.getCameraInfo(Camera.CameraInfo.CAMERA_FACING_BACK, cameraInfo);
-
-        // Find out if we need to swap dimension to get the preview size relative to sensor
-        // coordinate.
-        int displayRotation = getWindowManager().getDefaultDisplay().getRotation();
-        //noinspection ConstantConditions
-        mSensorOrientation = cameraInfo.orientation;
-        LOG.d("mSensorOrientation : " + mSensorOrientation);
-
-        boolean swappedDimensions = false;
-        switch (displayRotation) {
-            case Surface.ROTATION_0:
-            case Surface.ROTATION_180:
-                if (mSensorOrientation == 90 || mSensorOrientation == 270) {
-                    swappedDimensions = true;
-                }
-                break;
-            case Surface.ROTATION_90:
-            case Surface.ROTATION_270:
-                if (mSensorOrientation == 0 || mSensorOrientation == 180) {
-                    swappedDimensions = true;
-                }
-                break;
-            default:
-                LOG.e("Display rotation is invalid: " + displayRotation);
-        }
-
-        Point displaySize = new Point();
-        getWindowManager().getDefaultDisplay().getSize(displaySize);
-        int rotatedPreviewWidth = width;
-        int rotatedPreviewHeight = height;
-        int maxPreviewWidth = displaySize.x;
-        int maxPreviewHeight = displaySize.y;
-
-        if (swappedDimensions) {
-            rotatedPreviewWidth = height;
-            rotatedPreviewHeight = width;
-            maxPreviewWidth = displaySize.y;
-            maxPreviewHeight = displaySize.x;
-        }
-
-        // Daniel (2016-05-04 13:45:09): Preview 의 최대 사이즈를 기기 resolution 크기와 비교!
-        try {
-            if (maxPreviewWidth > maxPreviewHeight) {
-                if (maxPreviewWidth > Math.max(DeviceUtil.getResolutionWidth(this), DeviceUtil.getResolutionHeight(this)))
-                    maxPreviewWidth = Math.max(DeviceUtil.getResolutionWidth(this), DeviceUtil.getResolutionHeight(this));
-
-                if (maxPreviewHeight > Math.min(DeviceUtil.getResolutionWidth(this), DeviceUtil.getResolutionHeight(this)))
-                    maxPreviewHeight = Math.min(DeviceUtil.getResolutionWidth(this), DeviceUtil.getResolutionHeight(this));
-
-            } else if (maxPreviewHeight > maxPreviewWidth) {
-                if (maxPreviewHeight > Math.max(DeviceUtil.getResolutionWidth(this), DeviceUtil.getResolutionHeight(this)))
-                    maxPreviewHeight = Math.max(DeviceUtil.getResolutionWidth(this), DeviceUtil.getResolutionHeight(this));
-
-                if (maxPreviewWidth > Math.min(DeviceUtil.getResolutionWidth(this), DeviceUtil.getResolutionHeight(this)))
-                    maxPreviewWidth = Math.min(DeviceUtil.getResolutionWidth(this), DeviceUtil.getResolutionHeight(this));
-            } else {
-                if (maxPreviewWidth > Math.max(DeviceUtil.getResolutionWidth(this), DeviceUtil.getResolutionHeight(this)))
-                    maxPreviewWidth = Math.max(DeviceUtil.getResolutionWidth(this), DeviceUtil.getResolutionHeight(this));
-
-                if (maxPreviewHeight > Math.max(DeviceUtil.getResolutionWidth(this), DeviceUtil.getResolutionHeight(this)))
-                    maxPreviewHeight = Math.max(DeviceUtil.getResolutionWidth(this), DeviceUtil.getResolutionHeight(this));
-            }
-
-        } catch (Exception e) {
-            if (maxPreviewWidth > MAX_PREVIEW_WIDTH) maxPreviewWidth = MAX_PREVIEW_WIDTH;
-            if (maxPreviewHeight > MAX_PREVIEW_HEIGHT) maxPreviewHeight = MAX_PREVIEW_HEIGHT;
-        }
-
-        // Danger, W.R.! Attempting to use too large a preview size could  exceed the camera
-        // bus' bandwidth limitation, resulting in gorgeous previews but the storage of
-        // garbage capture data.
-        mPreviewSize = chooseOptimalSize(mCamera.getParameters().getSupportedPreviewSizes(),
-                rotatedPreviewWidth, rotatedPreviewHeight, maxPreviewWidth,
-                maxPreviewHeight, largest);
-
-        try {
-            LOG.d("previewSize width : " + mPreviewSize.width);
-            LOG.d("previewSize height : " + mPreviewSize.height);
-        } catch (Exception ignored){}
-
-        // We fit the aspect ratio of TextureView to the size of preview we picked.
-        int orientation = getResources().getConfiguration().orientation;
-        if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
-            mTextureView.setAspectRatio(
-                    mPreviewSize.width, mPreviewSize.height);
-        } else {
-            mTextureView.setAspectRatio(
-                    mPreviewSize.height, mPreviewSize.width);
-        }
-    }
-
-    /**
      * Configures the necessary {@link android.graphics.Matrix} transformation to `mTextureView`.
      * This method should be called after the camera preview size is determined in
      * setUpCameraOutputs and also the size of `mTextureView` is fixed.
@@ -301,6 +192,135 @@ public class CameraApi1Activity extends AppCompatActivity {
             mCamera.startPreview();
         } catch (Exception e){
             e.printStackTrace();
+        }
+    }
+
+    /**
+     * Sets up member variables related to camera.
+     *
+     * @param width  The width of available size for camera preview
+     * @param height The height of available size for camera preview
+     */
+    private void setUpCameraOutput(int width, int height) {
+        LOG.d("setUpCameraOutput : " + width + " / " + height);
+
+        // TODO: 1. 해당 카메라 및 Back camera 지원여부 체크.. 나중에!
+
+        // For still image captures, we use the largest available size.
+        Camera.Size largest = Collections.max(
+                mCamera.getParameters().getSupportedPreviewSizes(),
+                new CompareSizesByArea());
+
+        // TEST
+
+        for (Camera.Size size : mCamera.getParameters().getSupportedPreviewSizes()) {
+            LOG.d("size : " + size.width + " , " + size.height);
+        }
+
+        LOG.d("largest size : " + largest.width + " , " + largest.height);
+
+
+        Camera.CameraInfo cameraInfo = new Camera.CameraInfo();
+        Camera.getCameraInfo(Camera.CameraInfo.CAMERA_FACING_BACK, cameraInfo);
+
+        // Daniel (2016-08-23 18:50:59): 삼성을 용서할 수 없는 이유
+        // http://developer.samsung.com/technical-doc/view.do;jsessionid=8B206C1C008C6F7620881A382801DEDE?v=T000000068
+        mCamera.setDisplayOrientation(90);
+
+        // Find out if we need to swap dimension to get the preview size relative to sensor
+        // coordinate.
+        int displayRotation = getWindowManager().getDefaultDisplay().getRotation();
+        //noinspection ConstantConditions
+        mSensorOrientation = cameraInfo.orientation;
+        LOG.d("mSensorOrientation : " + mSensorOrientation);
+
+        boolean swappedDimensions = false;
+        switch (displayRotation) {
+            case Surface.ROTATION_0:
+            case Surface.ROTATION_180:
+                if (mSensorOrientation == 90 || mSensorOrientation == 270) {
+                    swappedDimensions = true;
+                }
+                break;
+            case Surface.ROTATION_90:
+            case Surface.ROTATION_270:
+                if (mSensorOrientation == 0 || mSensorOrientation == 180) {
+                    swappedDimensions = true;
+                }
+                break;
+            default:
+                LOG.e("Display rotation is invalid: " + displayRotation);
+        }
+
+        Point displaySize = new Point();
+        getWindowManager().getDefaultDisplay().getSize(displaySize);
+        int rotatedPreviewWidth = width;
+        int rotatedPreviewHeight = height;
+        int maxPreviewWidth = displaySize.x;
+        int maxPreviewHeight = displaySize.y;
+
+        if (swappedDimensions) {
+            rotatedPreviewWidth = height;
+            rotatedPreviewHeight = width;
+            maxPreviewWidth = displaySize.y;
+            maxPreviewHeight = displaySize.x;
+        }
+
+        int screenWidth = DeviceUtil.getResolutionWidth(this);
+        int screenHeight = DeviceUtil.getResolutionHeight(this);
+
+        LOG.d("Screen Size : " + screenWidth + " : " + screenHeight);
+
+        // Daniel (2016-05-04 13:45:09): Preview 의 최대 사이즈를 기기 resolution 크기와 비교!
+        try {
+            if (maxPreviewWidth > maxPreviewHeight) {
+                if (maxPreviewWidth > Math.max(screenWidth, screenHeight))
+                    maxPreviewWidth = Math.max(screenWidth, screenHeight);
+
+                if (maxPreviewHeight > Math.min(screenWidth, screenHeight))
+                    maxPreviewHeight = Math.min(screenWidth, screenHeight);
+
+            } else if (maxPreviewHeight > maxPreviewWidth) {
+                if (maxPreviewHeight > Math.max(screenWidth, screenHeight))
+                    maxPreviewHeight = Math.max(screenWidth, screenHeight);
+
+                if (maxPreviewWidth > Math.min(screenWidth, screenHeight))
+                    maxPreviewWidth = Math.min(screenWidth, screenHeight);
+            } else {
+                if (maxPreviewWidth > Math.max(screenWidth, screenHeight))
+                    maxPreviewWidth = Math.max(screenWidth, screenHeight);
+
+                if (maxPreviewHeight > Math.max(screenWidth, screenHeight))
+                    maxPreviewHeight = Math.max(screenWidth, screenHeight);
+            }
+
+        } catch (Exception e) {
+            if (maxPreviewWidth > MAX_PREVIEW_WIDTH) maxPreviewWidth = MAX_PREVIEW_WIDTH;
+            if (maxPreviewHeight > MAX_PREVIEW_HEIGHT) maxPreviewHeight = MAX_PREVIEW_HEIGHT;
+        }
+
+        // Danger, W.R.! Attempting to use too large a preview size could  exceed the camera
+        // bus' bandwidth limitation, resulting in gorgeous previews but the storage of
+        // garbage capture data.
+        mPreviewSize = chooseOptimalSize(mCamera.getParameters().getSupportedPreviewSizes(),
+                rotatedPreviewWidth, rotatedPreviewHeight, maxPreviewWidth,
+                maxPreviewHeight, largest);
+
+        try {
+            LOG.d("previewSize width : " + mPreviewSize.width);
+            LOG.d("previewSize height : " + mPreviewSize.height);
+        } catch (Exception ignored){}
+
+        // We fit the aspect ratio of TextureView to the size of preview we picked.
+        int orientation = getResources().getConfiguration().orientation;
+        if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
+            LOG.d("Orientation LANDSCAPE");
+            mTextureView.setAspectRatio(
+                    mPreviewSize.width, mPreviewSize.height);
+        } else {
+            LOG.d("Orientation PORTRAIT");
+            mTextureView.setAspectRatio(
+                    mPreviewSize.height, mPreviewSize.width);
         }
     }
 

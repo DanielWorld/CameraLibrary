@@ -30,7 +30,8 @@
             </intent-filter>
         </activity>
 
-        <activity android:name="com.danielpark.camera.CameraApi1Activity"/>
+        <activity android:name="com.danielpark.camera.CameraApi1Activity"
+            android:screenOrientation="portrait"/>
     </application>
 
 </manifest>

@@ -1,26 +1,18 @@
 package com.danielpark.camera;
 
-import android.app.Activity;
 import android.content.Context;
 import android.content.res.Configuration;
-import android.graphics.Matrix;
 import android.graphics.Point;
-import android.graphics.RectF;
-import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
 import android.os.Build;
-import android.util.SparseArray;
+import android.util.AttributeSet;
 import android.util.SparseIntArray;
 import android.view.Surface;
 import android.view.SurfaceHolder;
-import android.view.SurfaceView;
-import android.view.TextureView;
 import android.view.WindowManager;
-import android.widget.TextView;
 
-import com.danielpark.camera.util.AutoFitTextureView;
+import com.danielpark.camera.util.AutoFitSurfaceView;
 import com.danielpark.camera.util.DeviceUtil;
-import com.danielpark.camera.util.Logger;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -29,12 +21,14 @@ import java.util.Comparator;
 import java.util.List;
 
 /**
- * Camera API preview
+ * Camera API preview which uses SurfaceView
  * <br><br>
- * Copyright (c) 2014-2016 op7773hons@gmail.com
- * Created by Daniel Park on 2016-08-21.
+ * Copyright (C) 2014-2016 daniel@bapul.net
+ * Created by Daniel on 2016-08-25.
  */
-public class CameraPreview extends AutoFitTextureView{
+public class CameraSurfacePreview extends AutoFitSurfaceView implements SurfaceHolder.Callback {
+
+    SurfaceHolder mHolder;
 
     private Camera mCamera;
     private Camera.Size mPreviewSize;
@@ -49,62 +43,61 @@ public class CameraPreview extends AutoFitTextureView{
         ORIENTATIONS.append(Surface.ROTATION_270, 270);
     }
 
-    public CameraPreview(Activity context) {
+    public CameraSurfacePreview(Context context) {
         super(context);
 
-        setSurfaceTextureListener(mSurfaceTextureListener);
+        mHolder = getHolder();
+        mHolder.addCallback(this);
+
+        // Prior to 3.0 device
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB) {
+            mHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
+        }
     }
 
-    private final TextureView.SurfaceTextureListener mSurfaceTextureListener
-            = new TextureView.SurfaceTextureListener() {
-
-        @Override
-        public void onSurfaceTextureAvailable(SurfaceTexture surfaceTexture, int width, int height) {
-            openCamera(surfaceTexture, width, height);
-        }
-
-        @Override
-        public void onSurfaceTextureSizeChanged(SurfaceTexture surfaceTexture, int width, int height) {
-            configureTransform(surfaceTexture, width, height);
-        }
-
-        @Override
-        public boolean onSurfaceTextureDestroyed(SurfaceTexture surfaceTexture) {
-            releaseCamera();
-            return true;
-        }
-
-        @Override
-        public void onSurfaceTextureUpdated(SurfaceTexture surfaceTexture) {
-
-        }
-    };
-
-    private void openCamera(SurfaceTexture surfaceTexture, int width, int height) {
-        LOG.d("openCamera() : " + width + " , " + height);
-
-//        if (mCamera == null)
-            mCamera = Camera.open();
-
-        setUpCameraOutput(width, height);
-        configureTransform(surfaceTexture, width, height);
+    @Override
+    public void surfaceCreated(SurfaceHolder surfaceHolder) {
+        openCamera();
     }
 
-    /**
-     * Sets up member variables related to camera.
-     *
-     * @param width  The width of available size for camera preview
-     * @param height The height of available size for camera preview
-     */
-    private void setUpCameraOutput(int width, int height) {
+    @Override
+    public void surfaceChanged(SurfaceHolder surfaceHolder, int format, int width, int height) {
+
+        setupCameraOutput(width, height);
+    }
+
+    @Override
+    public void surfaceDestroyed(SurfaceHolder surfaceHolder) {
+        if (mCamera != null) {
+            mCamera.setPreviewCallback(null);
+            // Stop preview
+            mCamera.stopPreview();
+            // release memory
+            mCamera.release();
+            mCamera = null;
+        }
+    }
+
+    public void openCamera(){
+        LOG.d("openCamera()");
+
+        try {
+            if (mCamera == null)
+                mCamera = Camera.open();
+        } catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+
+    public void setupCameraOutput(int width, int height) {
         LOG.d("setupCameraOutput() : " + width + " , " + height);
 
         // 1. Get the largest supported preview size
-        Camera.Size largest = Collections.max(
+        Camera.Size largestPreviewSize = Collections.max(
                 mCamera.getParameters().getSupportedPreviewSizes(),
                 new CompareSizesByArea());
 
-        LOG.d("1. Largest preview size : " + largest.width + " , " + largest.height);
+        LOG.d("1. Largest preview size : " + largestPreviewSize.width + " , " + largestPreviewSize.height);
 
         // 2. Get Camera orientation to fix rotation problem
         // Find out if we need to swap dimension to get the preview size relative to sensor
@@ -163,7 +156,7 @@ public class CameraPreview extends AutoFitTextureView{
         // 6. choose Optimal preview size!
         mPreviewSize = chooseOptimalSize(mCamera.getParameters().getSupportedPreviewSizes(),
                 rotatedPreviewWidth, rotatedPreviewHeight, maxPreviewWidth, maxPreviewHeight,
-                largest);
+                largestPreviewSize);
         LOG.d("6. Optimal Preview size : " + mPreviewSize.width + " , " + mPreviewSize.height);
 
         // 7. According to orientation, change SurfaceView size
@@ -172,85 +165,23 @@ public class CameraPreview extends AutoFitTextureView{
             LOG.d("7. Orientation PORTRAIT : height - width");
 //            setAspectRatio(
 //                    mPreviewSize.height, mPreviewSize.width);
-        } else if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
+        } else {
             LOG.d("7, Orientation LANDSCAPE : width - height");
 //            setAspectRatio(
 //                    mPreviewSize.width, mPreviewSize.height);
         }
-    }
 
-    /**
-     * Configures the necessary {@link android.graphics.Matrix} transformation to `mTextureView`.
-     * This method should be called after the camera preview size is determined in
-     * setUpCameraOutputs and also the size of `mTextureView` is fixed.
-     *
-     * @param viewWidth  The width of `mTextureView`
-     * @param viewHeight The height of `mTextureView`
-     */
-    private void configureTransform(SurfaceTexture surfaceTexture, int viewWidth, int viewHeight) {
-        if (null == mPreviewSize)
-            return;
+        // 8. Set perfect Preview Size
+        Camera.Parameters parameters = mCamera.getParameters();
+        parameters.setPreviewSize(mPreviewSize.width, mPreviewSize.height);
+        mCamera.setParameters(parameters);
 
-        LOG.d("configureTransform : " + viewWidth + " / " + viewHeight);
-
-//        int rotation = get
-
-        // If your preview can change or rotate, take care of those events here.
-        // Make sure to stop the preview before resizing or reformatting it.
-
-        if (surfaceTexture == null) {
-            // preview surface does not exist
-            return;
-        }
-
-        // Stop preview before making changes
         try {
-            mCamera.stopPreview();
-        } catch (Exception ignored){
-            // ignore: tried to stop a non-existent preview
-        }
-
-        // 1. 해당 카메라 type 체크 (Back or Front)
-        // 2. 현재는 Back 일 경우에만 지원할 예정
-        // 2-1. 해당 Camera Info orientation + 기기의 orientation + surfaceHolder size 로 최적의 preview size 및 orientation 을 찾아서 적용하면 된다.
-        // 3. onMeasure() 로 처리할 지 여부는 추후 처리할 예정.
-
-        // Set preview size and make any resize, rotate or
-        // reformatting changes here
-        // and start preview with new settings
-        try {
-            if (null == mPreviewSize ) {
-                return;
-            }
-            WindowManager windowManager = (WindowManager) getContext().getSystemService(Context.WINDOW_SERVICE);
-            int rotation = windowManager.getDefaultDisplay().getRotation();
-            Matrix matrix = new Matrix();
-            RectF viewRect = new RectF(0, 0, viewWidth, viewHeight);
-            RectF bufferRect = new RectF(0, 0, mPreviewSize.height, mPreviewSize.width);
-            float centerX = viewRect.centerX();
-            float centerY = viewRect.centerY();
-            if (Surface.ROTATION_90 == rotation || Surface.ROTATION_270 == rotation) {
-                bufferRect.offset(centerX - bufferRect.centerX(), centerY - bufferRect.centerY());
-                matrix.setRectToRect(viewRect, bufferRect, Matrix.ScaleToFit.FILL);
-                float scale = Math.max(
-                        (float) viewHeight / mPreviewSize.height,
-                        (float) viewWidth / mPreviewSize.width);
-                matrix.postScale(scale, scale, centerX, centerY);
-                matrix.postRotate(90 * (rotation - 2), centerX, centerY);
-            } else if (Surface.ROTATION_180 == rotation) {
-                matrix.postRotate(180, centerX, centerY);
-            }
-            setTransform(matrix);
-
-            LOG.d("8. Set preview size : " + mPreviewSize.width + " , " + mPreviewSize.height);
-            // Daniel (2016-08-24 12:27:46): set preview size
-            Camera.Parameters mParameters = mCamera.getParameters();
-            mParameters.setPreviewSize(mPreviewSize.width, mPreviewSize.height);
-            mCamera.setParameters(mParameters);
-
-            mCamera.setPreviewTexture(surfaceTexture);
+            // Set live view
+            mCamera.setPreviewDisplay(mHolder);
+            // Start Preview
             mCamera.startPreview();
-        } catch (Exception e){
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }
@@ -303,33 +234,10 @@ public class CameraPreview extends AutoFitTextureView{
         }
     }
 
-    public void autoFocus(){
-        if (mCamera != null) {
-            mCamera.autoFocus(new Camera.AutoFocusCallback() {
-                @Override
-                public void onAutoFocus(boolean b, Camera camera) {
-
-                }
-            });
-        }
-    }
-
-    /**
-     * You must call this method to release Camera
-     */
-    public void releaseCamera() {
-        if (mCamera != null) {
-            LOG.d("Release Camera");
-
-//            mCamera.stopPreview();
-            mCamera.release();
-        }
-    }
-
     /**
      * Compares two {@code Size}s based on their areas.
      */
-    private static class CompareSizesByArea implements Comparator<Camera.Size> {
+    static class CompareSizesByArea implements Comparator<Camera.Size> {
 
         @Override
         public int compare(Camera.Size lhs, Camera.Size rhs) {
