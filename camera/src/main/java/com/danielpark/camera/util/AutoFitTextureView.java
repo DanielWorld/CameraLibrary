@@ -1,11 +1,13 @@
 package com.danielpark.camera.util;
 
 import android.content.Context;
+import android.graphics.Matrix;
+import android.support.annotation.CallSuper;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.TextureView;
 
 import com.danielpark.camera.listeners.ControlInterface;
+import com.danielpark.camera.listeners.OnTakePictureListener;
 
 /**
  * A {@link TextureView} that can be adjusted to a specified aspect ratio.
@@ -55,14 +57,14 @@ public class AutoFitTextureView extends TextureView implements ControlInterface{
         int width = MeasureSpec.getSize(widthMeasureSpec);
         int height = MeasureSpec.getSize(heightMeasureSpec);
         if (0 == mRatioWidth || 0 == mRatioHeight) {
-            Log.d("CameraLogger", "onMeasure() : " + width + " / " + height);
+            LOG.d("onMeasure() : " + width + " / " + height);
             setMeasuredDimension(width, height);
         } else {
             if (width < height * mRatioWidth / mRatioHeight) {
-                Log.d("CameraLogger", "onMeasure() : " + width + " / " + width * mRatioHeight / mRatioWidth);
+                LOG.d("onMeasure() : " + width + " / " + width * mRatioHeight / mRatioWidth);
                 setMeasuredDimension(width, width * mRatioHeight / mRatioWidth);
             } else {
-                Log.d("CameraLogger", "onMeasure() : " + height * mRatioWidth / mRatioHeight + " / " + height);
+                LOG.d("onMeasure() : " + height * mRatioWidth / mRatioHeight + " / " + height);
                 setMeasuredDimension(height * mRatioWidth / mRatioHeight, height);
             }
         }
@@ -73,13 +75,26 @@ public class AutoFitTextureView extends TextureView implements ControlInterface{
 
     }
 
+    @CallSuper
     @Override
     public void takePicture() {
 
     }
 
+    @CallSuper
     @Override
     public void flashTorch() {
+
+    }
+
+    @Override
+    public void setOnTakePictureListener(OnTakePictureListener listener) {
+
+    }
+
+    @CallSuper
+    @Override
+    public void finishCamera() {
 
     }
 }

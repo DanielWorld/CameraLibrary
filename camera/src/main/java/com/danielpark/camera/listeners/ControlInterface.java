@@ -1,5 +1,7 @@
 package com.danielpark.camera.listeners;
 
+import android.support.annotation.CallSuper;
+
 /**
  * Control Camera function interface
  * <br><br>
@@ -22,4 +24,16 @@ public interface ControlInterface {
      * Whether turn off the flash or not
      */
     void flashTorch();
+
+    /**
+     * Set listener to get taken picture file
+     * @param listener
+     */
+    void setOnTakePictureListener(OnTakePictureListener listener);
+
+    /**
+     * Called this when Activity has finished <br>
+     *     especially before super.onDestroy() is called
+     */
+    void finishCamera();
 }

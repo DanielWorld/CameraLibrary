@@ -1,12 +1,14 @@
 package com.danielpark.camera;
 
 import android.Manifest;
+import android.app.Activity;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.hardware.Camera;
 import android.os.Build;
 
 import com.danielpark.camera.util.AutoFitTextureView;
+import com.danielpark.camera.util.Logger;
 
 import java.io.IOException;
 
@@ -18,6 +20,8 @@ import java.io.IOException;
  * Created by Daniel Park on 2016-08-21.
  */
 public class CameraApiChecker {
+
+    private Logger LOG = Logger.getInstance();
 
     private CameraApiChecker(){}
 
@@ -32,7 +36,7 @@ public class CameraApiChecker {
     /**
      * Start proceed Camera feature
      */
-    public AutoFitTextureView build(Context context) throws IOException {
+    public AutoFitTextureView build(Activity context) throws IOException {
 
         if (!checkCameraHardware(context))
             throw new UnsupportedOperationException("No camera on this device!");

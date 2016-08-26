@@ -1,6 +1,8 @@
 package com.danielpark.camera;
 
+import android.app.Activity;
 import android.content.Context;
+import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -16,7 +18,9 @@ import android.view.Surface;
 import android.view.TextureView;
 import android.view.WindowManager;
 
+import com.danielpark.camera.listeners.OnTakePictureListener;
 import com.danielpark.camera.util.AutoFitTextureView;
+import com.danielpark.camera.util.DeviceUtil;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -28,6 +32,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 /**
  * Camera API preview
@@ -37,10 +42,14 @@ import java.util.List;
  */
 public class CameraPreview extends AutoFitTextureView{
 
+    private Activity mActivity;
+
     private Camera mCamera;
     private Camera.Size mPreviewSize;
     private Camera.Size mPictureSize;
     private int mSensorOrientation;
+
+    private OnTakePictureListener onTakePictureListener;
 
     private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
 
@@ -51,8 +60,10 @@ public class CameraPreview extends AutoFitTextureView{
         ORIENTATIONS.append(Surface.ROTATION_270, 270);
     }
 
-    public CameraPreview(Context context) {
+    public CameraPreview(Activity context) {
         super(context);
+
+        mActivity = context;
 
         setSurfaceTextureListener(mSurfaceTextureListener);
     }
@@ -87,8 +98,46 @@ public class CameraPreview extends AutoFitTextureView{
 //        if (mCamera == null)
             mCamera = Camera.open();
 
+        fixOrientation();
         setUpCameraOutput(width, height);
         configureTransform(surfaceTexture, width, height);
+    }
+
+    /**
+     * Fix Camera orientation to render perfect preview scene
+     */
+    private void fixOrientation() {
+        LOG.d("fixOrientation()");
+
+        // Daniel (2016-08-26 12:17:06): Get the largest supported preview size
+        Camera.Size largestPreviewSize = Collections.max(
+                mCamera.getParameters().getSupportedPreviewSizes(),
+                new CompareSizesByArea());
+
+        // Daniel (2016-08-26 12:17:33): Get current device configuration
+        int orientation = getResources().getConfiguration().orientation;
+
+        if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
+            int screenWidth = DeviceUtil.getResolutionWidth(getContext());
+            int screenHeight = DeviceUtil.getResolutionHeight(getContext());
+
+            if ((screenWidth > screenHeight && largestPreviewSize.width < largestPreviewSize.height)
+                    || (screenWidth < screenHeight && largestPreviewSize.width > largestPreviewSize.height))
+                mActivity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+            else
+                mActivity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+
+
+        } else if (orientation == Configuration.ORIENTATION_PORTRAIT) {
+            int screenWidth = DeviceUtil.getResolutionWidth(getContext());
+            int screenHeight = DeviceUtil.getResolutionHeight(getContext());
+
+            if ((screenWidth > screenHeight && largestPreviewSize.width < largestPreviewSize.height)
+                    || (screenWidth < screenHeight && largestPreviewSize.width > largestPreviewSize.height))
+                mActivity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+            else
+                mActivity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+        }
     }
 
     /**
@@ -183,14 +232,28 @@ public class CameraPreview extends AutoFitTextureView{
         // 9. According to orientation, change SurfaceView size
         int orientation = getResources().getConfiguration().orientation;
         if (orientation == Configuration.ORIENTATION_PORTRAIT) {
-            LOG.d("9. Orientation PORTRAIT : height - width");
-            setAspectRatio(
-                    mPreviewSize.height, mPreviewSize.width);
+            LOG.d("9. Orientation PORTRAIT");
+//            setAspectRatio(
+//                    mPreviewSize.height, mPreviewSize.width);
         } else if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
-            LOG.d("9, Orientation LANDSCAPE : width - height");
-            setAspectRatio(
-                    mPreviewSize.width, mPreviewSize.height);
+            LOG.d("9. Orientation LANDSCAPE");
+//            setAspectRatio(
+//                    mPreviewSize.width, mPreviewSize.height);
         }
+
+        int screenWidth = DeviceUtil.getResolutionWidth(getContext());
+        int screenHeight = DeviceUtil.getResolutionHeight(getContext());
+
+        if ((screenWidth > screenHeight && mPreviewSize.width > mPreviewSize.height)
+                || (screenWidth < screenHeight && mPreviewSize.width < mPreviewSize.height)) {
+            setAspectRatio(mPictureSize.width, mPreviewSize.height);
+        } else {
+            setAspectRatio(mPictureSize.height, mPreviewSize.width);
+        }
+
+//        int width1 = MeasureSpec.getSize(getMeasuredWidth());
+//        int height1 = MeasureSpec.getSize(getMeasuredHeight());
+//        LOG.d("mesured size : " + width1 + " , " + height1);
     }
 
     /**
@@ -267,6 +330,32 @@ public class CameraPreview extends AutoFitTextureView{
         }
     }
 
+    private void adjustAspectRatio(int videoWidth, int videoHeight) {
+        int viewWidth = getWidth();
+        int viewHeight = getHeight();
+        double aspectRatio = (double) videoHeight / videoWidth;
+
+        int newWidth, newHeight;
+        if (viewHeight > (int) (viewWidth * aspectRatio)) {
+            // limited by narrow width; restrict height
+            newWidth = viewWidth;
+            newHeight = (int) (viewWidth * aspectRatio);
+        } else {
+            // limited by short height; restrict width
+            newWidth = (int) (viewHeight / aspectRatio);
+            newHeight = viewHeight;
+        }
+        int xoff = (viewWidth - newWidth) / 2;
+        int yoff = (viewHeight - newHeight) / 2;
+
+        Matrix txform = new Matrix();
+        getTransform(txform);
+        txform.setScale((float) newWidth / viewWidth, (float) newHeight / viewHeight);
+        //txform.postRotate(10);          // just for fun
+        txform.postTranslate(xoff, yoff);
+        setTransform(txform);
+    }
+
     /**
      * Given {@code choices} of {@code Size}s supported by a camera, choose the smallest one that
      * is at least as large as the respective texture view size, and that is at most as large as the
@@ -337,7 +426,15 @@ public class CameraPreview extends AutoFitTextureView{
                 public void onPictureTaken(byte[] bytes, Camera camera) {
                     if (bytes != null) {
                         Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
-                        Bitmap rotatedBitmap = rotateImage(bitmap, mSensorOrientation);
+
+                        // Daniel (2016-08-26 14:01:20): Current Device rotation
+                        WindowManager windowManager = (WindowManager) getContext().getSystemService(Context.WINDOW_SERVICE);
+                        int displayRotation = windowManager.getDefaultDisplay().getRotation();
+                        LOG.d("Current device rotation : " + ORIENTATIONS.get(displayRotation));
+
+                        int result = (mSensorOrientation - ORIENTATIONS.get(displayRotation) + 360) % 360;
+
+                        Bitmap rotatedBitmap = rotateImage(bitmap, result);
 
                         File pictureFile = getOutputMediaFile();
                         if (pictureFile == null) {
@@ -352,6 +449,16 @@ public class CameraPreview extends AutoFitTextureView{
                         } catch (IOException e) {
                         } finally {
                             LOG.d("File path : " + pictureFile.getAbsolutePath());
+
+                            if (onTakePictureListener != null && pictureFile != null)
+                                onTakePictureListener.onTakePicture(pictureFile);
+
+                            try {
+                                if (mCamera != null) {
+                                    mCamera.stopPreview();
+                                    mCamera.startPreview();
+                                }
+                            } catch (Exception egnored){}
                         }
                     }
                 }
@@ -399,6 +506,21 @@ public class CameraPreview extends AutoFitTextureView{
                 return;
             }
         }
+    }
+
+    @Override
+    public void setOnTakePictureListener(OnTakePictureListener listener) {
+        onTakePictureListener = listener;
+    }
+
+    @Override
+    public void finishCamera() {
+        super.finishCamera();
+
+        if (mCamera != null)
+            mCamera.release();
+
+        onTakePictureListener = null;
     }
 
     private Bitmap rotateImage(Bitmap bitmap, int degrees) {

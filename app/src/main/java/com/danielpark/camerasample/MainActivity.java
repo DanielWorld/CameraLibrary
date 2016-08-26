@@ -1,28 +1,34 @@
 package com.danielpark.camerasample;
 
 import android.Manifest;
+import android.net.Uri;
 import android.os.Build;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.danielpark.camera.CameraApiChecker;
+import com.danielpark.camera.listeners.OnTakePictureListener;
 import com.danielpark.camera.util.AutoFitTextureView;
 import com.danielpark.camera.util.CameraLogger;
 
+import java.io.File;
 import java.io.IOException;
 
-public class MainActivity extends AppCompatActivity implements View.OnClickListener {
+public class MainActivity extends AppCompatActivity implements View.OnClickListener, OnTakePictureListener {
 
     final int REQUEST_PERMISSION = 1001;
 
     AutoFitTextureView cameraPreview;
+    ImageView thumbnail;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -36,6 +42,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         Button button2 = (Button) findViewById(R.id.takePictureBtn);
         Button button3 = (Button) findViewById(R.id.flashBtn);
 
+        thumbnail = (ImageView) findViewById(R.id.imageView);
+
         button.setOnClickListener(this);
         button2.setOnClickListener(this);
         button3.setOnClickListener(this);
@@ -47,6 +55,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             cameraPreview =  CameraApiChecker.getInstance().build(this);
             containerView.addView(cameraPreview);
 
+            cameraPreview.setOnTakePictureListener(this);
 
         } catch (UnsupportedOperationException e){
             Toast.makeText(MainActivity.this, e.getMessage(), Toast.LENGTH_SHORT).show();
@@ -83,5 +92,20 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 cameraPreview.flashTorch();
                 break;
         }
+    }
+
+    @Override
+    protected void onDestroy() {
+
+        if (cameraPreview != null)
+            cameraPreview.finishCamera();
+
+        super.onDestroy();
+    }
+
+    @Override
+    public void onTakePicture(@NonNull File file) {
+        if (thumbnail != null)
+            thumbnail.setImageURI(Uri.parse(file.getAbsolutePath()));
     }
 }
