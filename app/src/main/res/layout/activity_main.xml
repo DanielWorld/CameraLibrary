@@ -44,6 +44,16 @@
             android:layout_below="@+id/autoFocusBtn"
             android:layout_alignLeft="@+id/autoFocusBtn"
             android:layout_alignStart="@+id/autoFocusBtn" />
+
+        <Button
+            style="?android:attr/buttonStyleSmall"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Flash"
+            android:id="@+id/flashBtn"
+            android:layout_above="@+id/takePictureBtn"
+            android:layout_toRightOf="@+id/takePictureBtn"
+            android:layout_toEndOf="@+id/takePictureBtn" />
     </RelativeLayout>
 
     <FrameLayout

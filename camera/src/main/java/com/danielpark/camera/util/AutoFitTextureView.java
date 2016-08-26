@@ -1,13 +1,9 @@
 package com.danielpark.camera.util;
 
 import android.content.Context;
-import android.support.annotation.CallSuper;
 import android.util.AttributeSet;
 import android.util.Log;
-import android.view.Gravity;
 import android.view.TextureView;
-import android.view.View;
-import android.view.ViewGroup;
 
 import com.danielpark.camera.listeners.ControlInterface;
 
@@ -79,6 +75,11 @@ public class AutoFitTextureView extends TextureView implements ControlInterface{
 
     @Override
     public void takePicture() {
+
+    }
+
+    @Override
+    public void flashTorch() {
 
     }
 }

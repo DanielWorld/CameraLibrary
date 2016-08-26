@@ -17,4 +17,9 @@ public interface ControlInterface {
      * Start taking a picture
      */
     void takePicture();
+
+    /**
+     * Whether turn off the flash or not
+     */
+    void flashTorch();
 }

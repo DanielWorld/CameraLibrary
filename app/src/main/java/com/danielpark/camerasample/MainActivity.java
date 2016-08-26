@@ -5,7 +5,6 @@ import android.os.Build;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.view.Gravity;
 import android.view.View;
 import android.widget.Button;
 import android.widget.FrameLayout;
@@ -35,9 +34,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         RelativeLayout bottomView = (RelativeLayout) findViewById(R.id.bottomView);
         Button button = (Button) findViewById(R.id.autoFocusBtn);
         Button button2 = (Button) findViewById(R.id.takePictureBtn);
+        Button button3 = (Button) findViewById(R.id.flashBtn);
 
         button.setOnClickListener(this);
         button2.setOnClickListener(this);
+        button3.setOnClickListener(this);
 
         // Daniel (2016-08-23 10:45:00): Turn on CameraLogger Log switch
         CameraLogger.enable();
@@ -77,6 +78,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 break;
             case R.id.takePictureBtn:
                 cameraPreview.takePicture();
+                break;
+            case R.id.flashBtn:
+                cameraPreview.flashTorch();
                 break;
         }
     }

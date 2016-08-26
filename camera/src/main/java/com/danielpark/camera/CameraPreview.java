@@ -358,6 +358,49 @@ public class CameraPreview extends AutoFitTextureView{
             });
     }
 
+    @Override
+    public void flashTorch() {
+        super.flashTorch();
+
+        LOG.d("flashTorch()");
+
+        if (mCamera != null) {
+            Camera.Parameters params = mCamera.getParameters();
+            List<String> supportedFlashModes = params.getSupportedFlashModes();
+
+            if (supportedFlashModes == null) {
+                params.setFlashMode(Camera.Parameters.FLASH_MODE_OFF); // Crashlytics #1648
+                return;
+            } else {
+//                for (String i : supportedFlashModes) {
+//                    LOG.d("Supported Flash mode : " + i);
+//                }
+
+                String cameraFlashMode = params.getFlashMode();
+                LOG.d("Current Flash mode : " + cameraFlashMode);
+
+                if (supportedFlashModes.contains(Camera.Parameters.FLASH_MODE_TORCH)) {
+                    if (Camera.Parameters.FLASH_MODE_TORCH.equals(cameraFlashMode))
+                        params.setFlashMode(Camera.Parameters.FLASH_MODE_OFF);
+                    else
+                        params.setFlashMode(Camera.Parameters.FLASH_MODE_TORCH);
+                } else if (supportedFlashModes.contains(Camera.Parameters.FLASH_MODE_ON)) {
+                    if (Camera.Parameters.FLASH_MODE_ON.equals(cameraFlashMode))
+                        params.setFlashMode(Camera.Parameters.FLASH_MODE_OFF);
+                    else
+                        params.setFlashMode(Camera.Parameters.FLASH_MODE_ON);
+                }
+            }
+
+            try {
+                mCamera.setParameters(params);
+                mCamera.startPreview();
+            } catch (RuntimeException e) {
+                return;
+            }
+        }
+    }
+
     private Bitmap rotateImage(Bitmap bitmap, int degrees) {
         Matrix matrix = new Matrix();
         matrix.postRotate(degrees);
