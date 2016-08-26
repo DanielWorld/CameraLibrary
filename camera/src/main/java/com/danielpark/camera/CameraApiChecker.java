@@ -7,7 +7,10 @@ import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.hardware.Camera;
+import android.hardware.camera2.CameraCharacteristics;
+import android.hardware.camera2.CameraManager;
 import android.os.Build;
+import android.support.annotation.RequiresApi;
 
 import com.danielpark.camera.util.AutoFitTextureView;
 import com.danielpark.camera.util.DeviceUtil;
@@ -56,6 +59,10 @@ public class CameraApiChecker {
             throw new IOException("No WRITE_EXTERNAL_STORAGE permission!");
 
         fixOrientation(context);
+
+        if (checkCamera2Support(context)) {
+
+        }
 
         return new CameraPreview(context);
     }
@@ -116,6 +123,52 @@ public class CameraApiChecker {
             camera.release();
             camera = null;
         }
+    }
+
+    /**
+     * Check if the device supports Camera 2 API
+     * @return
+     */
+    private boolean checkCamera2Support(Context context) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP)
+            return false;
+
+        try {
+            CameraManager manager = (CameraManager) context.getSystemService(Context.CAMERA_SERVICE);
+
+            if (manager == null || manager.getCameraIdList().length < 1)
+                return false;
+
+            // Check if Camera Id for FACING_BACK_LENS exists
+            for (String cameraId : manager.getCameraIdList()) {
+                CameraCharacteristics characteristics = manager.getCameraCharacteristics(cameraId);
+
+                // get lens facing info
+                Integer facing = characteristics.get(CameraCharacteristics.LENS_FACING);
+
+                // front camera
+                if (facing != null && facing == CameraCharacteristics.LENS_FACING_FRONT)
+                    continue;
+
+                // external camera
+                if (facing != null && facing == CameraCharacteristics.LENS_FACING_EXTERNAL)
+                    continue;
+
+                // rear camera
+                if (facing != null && facing == CameraCharacteristics.LENS_FACING_BACK) {
+                    LOG.d("Camera2 API support level : " + characteristics.get(CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL));
+
+                    if (CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL_FULL == characteristics.get(CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL)){
+                        return true;
+                    }
+                }
+            }
+
+        } catch (Exception e){
+            e.printStackTrace();
+        }
+
+        return false;
     }
 
     /**
