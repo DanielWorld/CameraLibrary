@@ -112,8 +112,10 @@ public class CameraApiChecker {
                 context.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         }
 
-        if (camera != null)
+        if (camera != null) {
             camera.release();
+            camera = null;
+        }
     }
 
     /**

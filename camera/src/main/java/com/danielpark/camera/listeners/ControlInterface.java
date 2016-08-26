@@ -1,6 +1,6 @@
 package com.danielpark.camera.listeners;
 
-import android.support.annotation.CallSuper;
+import android.graphics.SurfaceTexture;
 
 /**
  * Control Camera function interface
@@ -9,6 +9,14 @@ import android.support.annotation.CallSuper;
  * Created by Daniel Park on 2016-08-25.
  */
 public interface ControlInterface {
+
+    /**
+     * Open Camera
+     * @param surfaceTexture
+     * @param width
+     * @param height
+     */
+    void openCamera(SurfaceTexture surfaceTexture, int width, int height);
 
     /**
      * Start Camera autoFocus
@@ -30,6 +38,11 @@ public interface ControlInterface {
      * @param listener
      */
     void setOnTakePictureListener(OnTakePictureListener listener);
+
+    /**
+     * Release Camera
+     */
+    void releaseCamera();
 
     /**
      * Called this when Activity has finished <br>

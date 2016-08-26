@@ -2,6 +2,7 @@ package com.danielpark.camera.util;
 
 import android.content.Context;
 import android.graphics.Matrix;
+import android.graphics.SurfaceTexture;
 import android.support.annotation.CallSuper;
 import android.util.AttributeSet;
 import android.view.TextureView;
@@ -71,6 +72,11 @@ public class AutoFitTextureView extends TextureView implements ControlInterface{
     }
 
     @Override
+    public void openCamera(SurfaceTexture surfaceTexture, int width, int height) {
+
+    }
+
+    @Override
     public void autoFocus() {
 
     }
@@ -89,6 +95,11 @@ public class AutoFitTextureView extends TextureView implements ControlInterface{
 
     @Override
     public void setOnTakePictureListener(OnTakePictureListener listener) {
+
+    }
+
+    @Override
+    public void releaseCamera() {
 
     }
 

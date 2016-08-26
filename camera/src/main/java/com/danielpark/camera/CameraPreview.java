@@ -32,7 +32,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 
 /**
  * Camera API preview
@@ -93,9 +92,11 @@ public class CameraPreview extends AutoFitTextureView{
         }
     };
 
-    private void openCamera(SurfaceTexture surfaceTexture, int width, int height) {
+    @Override
+    public void openCamera(SurfaceTexture surfaceTexture, int width, int height) {
         LOG.d("openCamera() : " + width + " , " + height);
-//        if (mCamera == null)
+
+        if (mCamera == null)
             mCamera = Camera.open();
 
         fixOrientation();
@@ -241,15 +242,15 @@ public class CameraPreview extends AutoFitTextureView{
 //                    mPreviewSize.width, mPreviewSize.height);
         }
 
-        int screenWidth = DeviceUtil.getResolutionWidth(getContext());
-        int screenHeight = DeviceUtil.getResolutionHeight(getContext());
-
-        if ((screenWidth > screenHeight && mPreviewSize.width > mPreviewSize.height)
-                || (screenWidth < screenHeight && mPreviewSize.width < mPreviewSize.height)) {
-            setAspectRatio(mPictureSize.width, mPreviewSize.height);
-        } else {
-            setAspectRatio(mPictureSize.height, mPreviewSize.width);
-        }
+//        int screenWidth = DeviceUtil.getResolutionWidth(getContext());
+//        int screenHeight = DeviceUtil.getResolutionHeight(getContext());
+//
+//        if ((screenWidth > screenHeight && mPreviewSize.width > mPreviewSize.height)
+//                || (screenWidth < screenHeight && mPreviewSize.width < mPreviewSize.height)) {
+//            setAspectRatio(mPictureSize.width, mPreviewSize.height);
+//        } else {
+//            setAspectRatio(mPictureSize.height, mPreviewSize.width);
+//        }
 
 //        int width1 = MeasureSpec.getSize(getMeasuredWidth());
 //        int height1 = MeasureSpec.getSize(getMeasuredHeight());
@@ -295,10 +296,13 @@ public class CameraPreview extends AutoFitTextureView{
             int rotation = windowManager.getDefaultDisplay().getRotation();
             Matrix matrix = new Matrix();
             RectF viewRect = new RectF(0, 0, viewWidth, viewHeight);
-            RectF bufferRect = new RectF(0, 0, mPreviewSize.height, mPreviewSize.width);
+            RectF bufferRect = new RectF(0, 0, mPreviewSize.width, mPreviewSize.height);
             float centerX = viewRect.centerX();
             float centerY = viewRect.centerY();
             if (Surface.ROTATION_90 == rotation || Surface.ROTATION_270 == rotation) {
+                LOG.d("rotation : " + ORIENTATIONS.get(rotation));
+                // Daniel (2016-08-26 17:34:05): Reverse dst size
+                bufferRect = new RectF(0, 0, mPreviewSize.height, mPreviewSize.width);
                 bufferRect.offset(centerX - bufferRect.centerX(), centerY - bufferRect.centerY());
                 matrix.setRectToRect(viewRect, bufferRect, Matrix.ScaleToFit.FILL);
                 float scale = Math.max(
@@ -306,8 +310,16 @@ public class CameraPreview extends AutoFitTextureView{
                         (float) viewWidth / mPreviewSize.width);
                 matrix.postScale(scale, scale, centerX, centerY);
                 matrix.postRotate(90 * (rotation - 2), centerX, centerY);
-            } else if (Surface.ROTATION_180 == rotation) {
-                matrix.postRotate(180, centerX, centerY);
+            } else if (Surface.ROTATION_0 == rotation || Surface.ROTATION_180 == rotation) {
+                bufferRect.offset(centerX - bufferRect.centerX(), centerY - bufferRect.centerY());
+                matrix.setRectToRect(viewRect, bufferRect, Matrix.ScaleToFit.FILL);
+                float scale = Math.max(
+                        (float) viewHeight / mPreviewSize.height,
+                        (float) viewWidth / mPreviewSize.width);
+                matrix.postScale(scale, scale, centerX, centerY);
+
+                if (Surface.ROTATION_180 == rotation)
+                    matrix.postRotate(180, centerX, centerY);
             }
             setTransform(matrix);
 
@@ -513,12 +525,31 @@ public class CameraPreview extends AutoFitTextureView{
         onTakePictureListener = listener;
     }
 
+    /**
+     * You must call this method to release Camera
+     */
+    @Override
+    public void releaseCamera() {
+        if (mCamera != null) {
+            LOG.d("Release Camera");
+            // Call stopPreview() to stop updating the preview surface.
+//            mCamera.stopPreview();
+            // Important: Call release() to release the camera for use by other
+            // applications. Applications should release the camera immediately
+            // during onPause() and re-open() it during onResume()).
+            mCamera.release();
+            mCamera = null;
+        }
+    }
+
     @Override
     public void finishCamera() {
         super.finishCamera();
 
-        if (mCamera != null)
+        if (mCamera != null) {
             mCamera.release();
+            mCamera = null;
+        }
 
         onTakePictureListener = null;
     }
@@ -534,6 +565,7 @@ public class CameraPreview extends AutoFitTextureView{
 
         return rotatedBitmap;
     }
+
     private static File getOutputMediaFile() {
         File mediaStorageDir = new File(
                 Environment
@@ -541,7 +573,7 @@ public class CameraPreview extends AutoFitTextureView{
                 "CameraLibrary");
         if (!mediaStorageDir.exists()) {
             if (!mediaStorageDir.mkdirs()) {
-                Log.d("CameraLogger", "failed to create directory");
+                Log.e("CameraLogger", "failed to create directory");
                 return null;
             }
         }
@@ -553,21 +585,6 @@ public class CameraPreview extends AutoFitTextureView{
                 + "IMG_" + timeStamp + ".jpg");
 
         return mediaFile;
-    }
-
-    /**
-     * You must call this method to release Camera
-     */
-    public void releaseCamera() {
-        if (mCamera != null) {
-            LOG.d("Release Camera");
-            // Call stopPreview() to stop updating the preview surface.
-//            mCamera.stopPreview();
-            // Important: Call release() to release the camera for use by other
-            // applications. Applications should release the camera immediately
-            // during onPause() and re-open() it during onResume()).
-            mCamera.release();
-        }
     }
 
     /**

@@ -71,6 +71,31 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     @Override
+    protected void onResume() {
+        super.onResume();
+
+        try {
+//			// Daniel (2016-05-17 14:37:25): TextureView 여부를 체크한 뒤 , textureView open!
+            if (cameraPreview.isAvailable()) {
+                Log.d("CameraLogger", "TextureView is available!");
+                cameraPreview.openCamera(cameraPreview.getSurfaceTexture(), cameraPreview.getWidth(), cameraPreview.getHeight());
+            } else {
+                Log.d("CameraLogger", "TextureView is not available!");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+
+        if (cameraPreview != null)
+            cameraPreview.releaseCamera();
+    }
+
+    @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
 

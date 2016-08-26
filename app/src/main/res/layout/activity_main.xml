@@ -1,14 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<android.support.percent.PercentRelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     tools:context="com.danielpark.camerasample.MainActivity">
 
     <TextView
         android:id="@+id/topView"
         android:layout_width="match_parent"
-        android:layout_height="40dp"
+        app:layout_heightPercent="10%"
         android:layout_alignParentTop="true"
         android:background="@android:color/black"
         android:text="Title"
@@ -17,7 +18,7 @@
     <RelativeLayout
         android:id="@+id/bottomView"
         android:layout_width="match_parent"
-        android:layout_height="250dp"
+        app:layout_heightPercent="50%"
         android:layout_alignParentBottom="true"
         android:background="@android:color/black"
         android:text="Button"
@@ -68,8 +69,7 @@
         android:id="@+id/container"
         android:background="@android:color/black"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        app:layout_heightPercent="40%"
         android:layout_below="@+id/topView"
-        android:layout_above="@+id/bottomView"
         android:layout_centerHorizontal="true" />
-</RelativeLayout>
+</android.support.percent.PercentRelativeLayout>
