@@ -41,6 +41,19 @@ public class CameraApiChecker {
         return sThis;
     }
 
+    private int orientationMode = 0;    // 0 means nothing happen!
+
+    /**
+     *
+     * @param orientation Portrait(1), Landscape(2), auto set(3) (set perfect orientation according to device camera lens automatically)
+     * @return
+     */
+    public CameraApiChecker setOrientation(int orientation) {
+        this.orientationMode = orientation;
+        return this;
+    }
+
+
     /**
      * Start proceed Camera feature
      */
@@ -58,7 +71,18 @@ public class CameraApiChecker {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && context.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED)
             throw new IOException("No WRITE_EXTERNAL_STORAGE permission!");
 
-        fixOrientation(context);
+
+        switch (orientationMode) {
+            case 1:
+                context.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+                break;
+            case 2:
+                context.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+                break;
+            case 3:
+                fixOrientation(context);
+                break;
+        }
 
         if (checkCamera2Support(context)) {
 
