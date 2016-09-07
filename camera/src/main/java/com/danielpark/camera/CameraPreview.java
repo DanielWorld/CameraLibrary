@@ -474,7 +474,10 @@ public class CameraPreview extends AutoFitTextureView{
 
                         int result = (mSensorOrientation - ORIENTATIONS.get(displayRotation) + 360) % 360;
 
-                        Bitmap rotatedBitmap = rotateImage(bitmap, result);
+                        Bitmap rotatedBitmap = null;
+
+                        if (result % 360 != 0)
+                            rotatedBitmap = rotateImage(bitmap, result);
 
                         File pictureFile = getOutputMediaFile();
                         if (pictureFile == null) {
@@ -482,7 +485,12 @@ public class CameraPreview extends AutoFitTextureView{
                         }
                         try {
                             FileOutputStream fos = new FileOutputStream(pictureFile);
-                            rotatedBitmap.compress(Bitmap.CompressFormat.JPEG, 95, fos);
+
+                            if (rotatedBitmap != null)
+                                rotatedBitmap.compress(Bitmap.CompressFormat.JPEG, 95, fos);
+                            else
+                                bitmap.compress(Bitmap.CompressFormat.JPEG, 95, fos);
+
                             fos.close();
                         } catch (FileNotFoundException e) {
 
@@ -583,6 +591,9 @@ public class CameraPreview extends AutoFitTextureView{
     }
 
     private Bitmap rotateImage(Bitmap bitmap, int degrees) {
+        if (degrees % 360 == 0)
+            return bitmap;
+
         Matrix matrix = new Matrix();
         matrix.postRotate(degrees);
 
