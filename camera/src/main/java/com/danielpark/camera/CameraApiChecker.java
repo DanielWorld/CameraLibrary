@@ -71,6 +71,9 @@ public class CameraApiChecker {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && context.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED)
             throw new IOException("No WRITE_EXTERNAL_STORAGE permission!");
 
+        if (Camera.getNumberOfCameras() < 1)
+            throw new IOException("No Camera hardware was found!");
+
 
         switch (orientationMode) {
             case 1:
