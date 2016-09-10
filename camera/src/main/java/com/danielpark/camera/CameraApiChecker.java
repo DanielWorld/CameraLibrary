@@ -10,7 +10,6 @@ import android.hardware.Camera;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraManager;
 import android.os.Build;
-import android.support.annotation.RequiresApi;
 
 import com.danielpark.camera.util.AutoFitTextureView;
 import com.danielpark.camera.util.DeviceUtil;
@@ -59,9 +58,6 @@ public class CameraApiChecker {
      */
     public AutoFitTextureView build(Activity context) throws IOException {
 
-        if (!checkCameraHardware(context))
-            throw new UnsupportedOperationException("No camera on this device!");
-
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && context.checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED)
             throw new IOException("No CAMERA permission!");
 
@@ -71,6 +67,8 @@ public class CameraApiChecker {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && context.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED)
             throw new IOException("No WRITE_EXTERNAL_STORAGE permission!");
 
+        if (!checkCameraHardware(context))
+            throw new UnsupportedOperationException("No camera on this device!");
 
         switch (orientationMode) {
             case 1:
@@ -84,11 +82,12 @@ public class CameraApiChecker {
                 break;
         }
 
-        if (checkCamera2Support(context)) {
-
+        if (checkCamera2BackLensSupport(context)) {
+            return new Camera2Preview(context);
+        } else {
+            checkCamera1BackLensSupport();
+            return new CameraPreview(context);
         }
-
-        return new CameraPreview(context);
     }
 
     /** Check if this device has a camera */
@@ -112,6 +111,9 @@ public class CameraApiChecker {
         LOG.d("FixOrientation()");
 
         Camera camera = Camera.open();
+
+        if (camera == null)
+            throw new UnsupportedOperationException("No Camera1 Back facing Lens!");
 
         // Daniel (2016-08-26 12:17:06): Get the largest supported preview size
         Camera.Size largestPreviewSize = Collections.max(
@@ -153,7 +155,7 @@ public class CameraApiChecker {
      * Check if the device supports Camera 2 API
      * @return
      */
-    private boolean checkCamera2Support(Context context) {
+    private boolean checkCamera2BackLensSupport(Context context) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP)
             return false;
 
@@ -193,6 +195,20 @@ public class CameraApiChecker {
         }
 
         return false;
+    }
+
+    /**
+     * Check if the device supports back facing lens in Camera
+     */
+    private void checkCamera1BackLensSupport() {
+        Camera camera = Camera.open();
+
+        if (camera == null) {
+            throw new UnsupportedOperationException("No Camera1 Back facing Lens!");
+        } else {
+            camera.release();
+            camera = null;
+        }
     }
 
     /**
