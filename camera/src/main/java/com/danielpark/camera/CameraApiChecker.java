@@ -184,7 +184,8 @@ public class CameraApiChecker {
                 if (facing != null && facing == CameraCharacteristics.LENS_FACING_BACK) {
                     LOG.d("Camera2 API support level : " + characteristics.get(CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL));
 
-                    if (CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL_FULL == characteristics.get(CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL)){
+                    if (CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL_FULL == characteristics.get(CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL)
+                            || CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL_3 == characteristics.get(CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL)){
                         return true;
                     }
                 }
