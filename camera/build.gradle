@@ -1,18 +1,47 @@
+buildscript {
+    repositories {
+        jcenter()
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:2.2.2'
+        classpath 'com.novoda:bintray-release:0.3.4'
+    }
+}
 apply plugin: 'com.android.library'
+
+// http://sunghwanjo94.blogspot.kr/2015/07/jcenter.html
+// https://github.com/novoda/bintray-release
+// $ ./gradlew clean build bintrayUpload -PbintrayUser=BINTRAY_USERNAME -PbintrayKey=BINTRAY_KEY -PdryRun=false
+apply plugin: 'com.novoda.bintray-release'
+publish {
+    userOrg = 'danielworld'
+    groupId = 'com.danielworld'
+    artifactId = 'camera-library'
+    publishVersion = '1.0.0'
+    desc = 'A camera library which supports Camera API and Camera2 API in Android Application'
+    website = 'https://github.com/DanielWorld/CameraLibrary'
+    issueTracker = "${website}/issues"
+    repository = "${website}.git"
+}
 
 android {
     compileSdkVersion 24
-    buildToolsVersion "24.0.1"
+    buildToolsVersion "24.0.3"
 
     defaultConfig {
         minSdkVersion 15
         targetSdkVersion 24
         versionCode 1
-        versionName "1.0"
+        versionName "1.0.0"
     }
     buildTypes {
+        debug {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
         release {
-            minifyEnabled false
+            minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
@@ -20,6 +49,6 @@ android {
 
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
-    testCompile 'junit:junit:4.12'
+//    testCompile 'junit:junit:4.12'
     compile 'com.android.support:appcompat-v7:24.2.0'
 }

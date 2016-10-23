@@ -34,7 +34,7 @@ public class CameraApiChecker {
 
     private static CameraApiChecker sThis;
 
-    public static CameraApiChecker getInstance(){
+    public static synchronized CameraApiChecker getInstance(){
         if (sThis == null)
             sThis = new CameraApiChecker();
         return sThis;
