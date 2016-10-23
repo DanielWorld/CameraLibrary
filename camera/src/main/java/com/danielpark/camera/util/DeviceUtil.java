@@ -5,7 +5,7 @@ import android.view.Display;
 import android.view.WindowManager;
 
 /**
- * 디바이스 관련 유틸리티
+ * Device's utility
  * <br><br>
  * Copyright (c) 2014-2016 daniel@bapul.net
  * Created by Daniel Park on 2016-08-23.
@@ -13,9 +13,9 @@ import android.view.WindowManager;
 public class DeviceUtil {
 
     /**
-     * 기기 Resolution 사이즈 구하는 method
-     * @param context
-     * @return
+     * Get device's resolution size
+     * @param context {@link Context}
+     * @return {@link Display} : device resolution size as display
      */
     public static Display getResolutionSize(Context context) throws Exception{
         WindowManager wm = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
@@ -24,10 +24,10 @@ public class DeviceUtil {
     }
 
     /**
-     * 기기 Resolution width 구하는 method. 실패시 0 리턴 <br>
-     *     만약 LANDSCAPE MODE 일경우 height 가 width 로 변함
-     * @param context
-     * @return
+     * Get device's resolution width. if it fails then return 0 <br>
+     *     If Orientation is LANDSCAPE MODE, height will be width
+     * @param context {@link Context}
+     * @return device's resolution width
      */
     public static int getResolutionWidth(Context context){
         try {
@@ -38,10 +38,10 @@ public class DeviceUtil {
     }
 
     /**
-     * 기기 Resolution height 구하는 method. 실패시 0 리턴 <br>
-     *     만약 LANDSCAPE MODE 일경우 width 가 height 로 변함
-     * @param context
-     * @return
+     *  Get device's resolution height. if it fails then return 0 <br>
+     *     If Orientation is LANDSCAPE MODE, width will be height
+     * @param context {@link Context}
+     * @return device's resolution height
      */
     public static int getResolutionHeight(Context context){
         try{
