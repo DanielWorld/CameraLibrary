@@ -1,6 +1,7 @@
 package com.danielpark.camera.listeners;
 
 import android.graphics.SurfaceTexture;
+import android.hardware.camera2.CameraAccessException;
 
 /**
  * Control Camera function interface
@@ -16,7 +17,7 @@ public interface ControlInterface {
      * @param width
      * @param height
      */
-    void openCamera(SurfaceTexture surfaceTexture, int width, int height);
+    void openCamera(SurfaceTexture surfaceTexture, int width, int height) throws CameraAccessException;
 
     /**
      * Start Camera autoFocus
