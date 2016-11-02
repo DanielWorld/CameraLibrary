@@ -8,14 +8,12 @@ import android.graphics.Matrix;
 import android.graphics.Point;
 import android.graphics.RectF;
 import android.graphics.SurfaceTexture;
-import android.hardware.Camera;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CameraMetadata;
-import android.hardware.camera2.CaptureFailure;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.CaptureResult;
 import android.hardware.camera2.TotalCaptureResult;
@@ -26,6 +24,7 @@ import android.os.Build;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.os.Message;
 import android.support.annotation.NonNull;
 import android.util.Log;
 import android.util.Size;
@@ -49,6 +48,8 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Camera2 API preview
@@ -80,16 +81,18 @@ public class Camera2Preview extends AutoFitTextureView {
     private ImageReader mImageReader;
     /** An output file for our picture */
     private File mTakePictureFile = getOutputMediaFile();
+    /** A {@link Semaphore} to prevent the app from exiting before closing the camera. */
+    private Semaphore mCameraOpenCloseLock = new Semaphore(1);
 
     private OnTakePictureListener onTakePictureListener;
 
     private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
 
     static {
-        ORIENTATIONS.append(Surface.ROTATION_0, 90);
-        ORIENTATIONS.append(Surface.ROTATION_90, 0);
-        ORIENTATIONS.append(Surface.ROTATION_180, 270);
-        ORIENTATIONS.append(Surface.ROTATION_270, 180);
+        ORIENTATIONS.append(Surface.ROTATION_0, 0);
+        ORIENTATIONS.append(Surface.ROTATION_90, 90);
+        ORIENTATIONS.append(Surface.ROTATION_180, 180);
+        ORIENTATIONS.append(Surface.ROTATION_270, 270);
     }
 
     public Camera2Preview(Context context) {
@@ -135,6 +138,7 @@ public class Camera2Preview extends AutoFitTextureView {
         @Override
         public void onOpened(CameraDevice camera) {
             // This method is called when the camera is opened. We start camera preview here
+            mCameraOpenCloseLock.release();
             mCameraDevice = camera;
             // TODO: startPreview
             try {
@@ -146,14 +150,33 @@ public class Camera2Preview extends AutoFitTextureView {
 
         @Override
         public void onDisconnected(CameraDevice camera) {
+            mCameraOpenCloseLock.release();
             camera.close();
             mCameraDevice = null;
         }
 
         @Override
         public void onError(CameraDevice camera, int error) {
+            mCameraOpenCloseLock.release();
             camera.close();
             mCameraDevice = null;
+        }
+    };
+
+    /**
+     * To tell if {@link ImageSaver} finished storing Image byte[] to file
+     */
+    Handler mOnImageFinishedHandler = new Handler(){
+
+        @Override
+        public void handleMessage(Message msg) {
+            super.handleMessage(msg);
+
+            if (msg != null)
+                LOG.d("handleMessage : " + msg.toString());
+
+            if (onTakePictureListener != null && mTakePictureFile != null)
+                onTakePictureListener.onTakePicture(mTakePictureFile);
         }
     };
 
@@ -166,7 +189,7 @@ public class Camera2Preview extends AutoFitTextureView {
 
         @Override
         public void onImageAvailable(ImageReader reader) {
-            mBackgroundHandler.post(new ImageSaver(reader.acquireNextImage(), mTakePictureFile));
+            mBackgroundHandler.post(new ImageSaver(reader.acquireNextImage(), mTakePictureFile, mOnImageFinishedHandler));
         }
     };
 
@@ -206,7 +229,14 @@ public class Camera2Preview extends AutoFitTextureView {
         setUpCameraOutput(width, height, mCameraManager);
         configureTransform(surfaceTexture, width, height);
 
-        mCameraManager.openCamera(mCameraId, mStateCallback, mBackgroundHandler);
+        try {
+            if (!mCameraOpenCloseLock.tryAcquire(2500, TimeUnit.MILLISECONDS)) {
+                throw new RuntimeException("Time out waiting to lock camera opening.");
+            }
+            mCameraManager.openCamera(mCameraId, mStateCallback, mBackgroundHandler);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
     /**
@@ -603,9 +633,6 @@ public class Camera2Preview extends AutoFitTextureView {
                                                    @NonNull TotalCaptureResult result) {
 
                         LOG.d("File path : " + mTakePictureFile.getAbsolutePath());
-
-                        if (onTakePictureListener != null && mTakePictureFile != null)
-                            onTakePictureListener.onTakePicture(mTakePictureFile);
                     }
                 };
 
@@ -633,20 +660,27 @@ public class Camera2Preview extends AutoFitTextureView {
     @Override
     public void releaseCamera() {
 //        super.releaseCamera();
-        if (mCameraDevice != null) {
-            LOG.d("Release Camera");
-            mCameraDevice.close();
-            mCameraDevice = null;
+        LOG.d("release camera");
+
+        try {
+            closeCamera();
+            stopBackgroundThread();
+        } catch (Exception e){
+            e.printStackTrace();
         }
+
     }
 
     @Override
     public void finishCamera() {
         super.finishCamera();
 
-        if (mCameraDevice != null) {
-            mCameraDevice.close();
-            mCameraDevice = null;
+        try {
+            mOnImageFinishedHandler = null;
+            closeCamera();
+            stopBackgroundThread();
+        } catch (Exception e){
+            e.printStackTrace();
         }
     }
 
@@ -674,6 +708,32 @@ public class Camera2Preview extends AutoFitTextureView {
     }
 
     /**
+     * Close camera
+     */
+    private void closeCamera() {
+        try {
+            mCameraOpenCloseLock.acquire();
+            if (null != mCameraCaptureSession) {
+                mCameraCaptureSession.close();
+                mCameraCaptureSession = null;
+            }
+            if (null != mCameraDevice) {
+                mCameraDevice.close();
+                mCameraDevice = null;
+            }
+            if (null != mImageReader) {
+                mImageReader.close();
+                mImageReader = null;
+            }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } finally {
+            if (mCameraOpenCloseLock != null)
+                mCameraOpenCloseLock.release();
+        }
+    }
+
+    /**
      * Saves a JPEG {@link Image} into the specified {@link File}.
      */
     private static class ImageSaver implements Runnable {
@@ -687,12 +747,15 @@ public class Camera2Preview extends AutoFitTextureView {
          */
         private final File mFile;
 
-        public ImageSaver(Image image, File file) {
+        private final Handler mHandler;
+
+        public ImageSaver(Image image, File file, Handler handler) {
             mImage = image;
             mFile = file;
+            mHandler = handler;
         }
 
-        // Daniel (2016-04-29 18:15:01): 해당 파일에 이미지 저장.
+        // Daniel (2016-04-29 18:15:01): Try to save image byte to file
         @Override
         public void run() {
             ByteBuffer buffer = mImage.getPlanes()[0].getBuffer();
@@ -713,6 +776,9 @@ public class Camera2Preview extends AutoFitTextureView {
                         e.printStackTrace();
                     }
                 }
+
+                // Daniel (2016-11-02 12:09:01): When FileOutputStream process has finished, report result to handler
+                mHandler.sendEmptyMessage(101020);
             }
         }
     }
@@ -733,7 +799,7 @@ public class Camera2Preview extends AutoFitTextureView {
                 .format(new Date());
         File mediaFile;
         mediaFile = new File(mediaStorageDir.getPath() + File.separator
-                + "IMG_" + timeStamp + ".jpg");
+                + "CameraLibrary.jpg");
 
         return mediaFile;
     }
