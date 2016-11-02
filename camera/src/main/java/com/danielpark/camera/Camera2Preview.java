@@ -70,6 +70,8 @@ public class Camera2Preview extends AutoFitTextureView {
     private CameraCaptureSession mCameraCaptureSession;
 
     private Size[] mSupportedPreviewSize;
+    /** Camera back lens' feature */
+    private CameraCharacteristics mCameraCharacteristics;
 
     /** A {@link Handler} for running tasks in the background */
     private Handler mBackgroundHandler;
@@ -308,6 +310,8 @@ public class Camera2Preview extends AutoFitTextureView {
             if (facing != null && facing == CameraCharacteristics.LENS_FACING_BACK) {
 
                 mSupportedPreviewSize = map.getOutputSizes(ImageFormat.JPEG);
+                // Save Camera's feature
+                mCameraCharacteristics = cameraManager.getCameraCharacteristics(cameraId);
 
                 // 1. Get the largest supported preview size
                 Size largestPreviewSize = Collections.max(
@@ -653,6 +657,30 @@ public class Camera2Preview extends AutoFitTextureView {
     @Override
     public void flashTorch() {
         super.flashTorch();
+
+        LOG.d("flashTorch()");
+
+        if (mCameraCharacteristics != null) {
+            // Check if the flash is supported.
+            Boolean available = mCameraCharacteristics.get(CameraCharacteristics.FLASH_INFO_AVAILABLE);
+            if (available == null || !available) {
+                throw new UnsupportedOperationException("Flash isn't supported!");
+            }
+
+            try {
+                if (mPreviewRequestBuilder.get(CaptureRequest.FLASH_MODE) == CameraMetadata.FLASH_MODE_TORCH) {
+                    mPreviewRequestBuilder.set(CaptureRequest.FLASH_MODE, CameraMetadata.FLASH_MODE_OFF);
+                    mCameraCaptureSession.setRepeatingRequest(mPreviewRequestBuilder.build(), null, null);
+                } else {
+                    mPreviewRequestBuilder.set(CaptureRequest.FLASH_MODE, CameraMetadata.FLASH_MODE_TORCH);
+                    mCameraCaptureSession.setRepeatingRequest(mPreviewRequestBuilder.build(), null, null);
+                }
+            } catch (CameraAccessException | NullPointerException e) {
+                e.printStackTrace();
+            }
+
+
+        }
     }
 
     @Override
