@@ -471,10 +471,16 @@ public class Camera2Preview extends AutoFitTextureView {
                             (float) viewWidth / mPreviewSize.getWidth());
                     matrix.postScale(scale, scale, centerX, centerY);
 
+                    // Sensor orientation is 90 for most devices, or 270 for some devices (eg. Nexus 5X)
+                    // We have to take that into account and rotate JPEG properly.
+                    // For devices with orientation of 90, we simply return our mapping from ORIENTATIONS.
+                    // (In this case, add 90)
+                    // For devices with orientation of 270, we need to rotate the JPEG 180 degrees.
+                    // (In this case, add -90)
                     if (Surface.ROTATION_0 == rotation)
-                        matrix.postRotate(90 - mSensorOrientation, centerX, centerY);
+                        matrix.postRotate(-mSensorOrientation + (mSensorOrientation == 90 ? 90 : -90), centerX, centerY);
                     else
-                        matrix.postRotate(180 - mSensorOrientation, centerX, centerY);
+                        matrix.postRotate(-mSensorOrientation, centerX, centerY);
                 } else if (Surface.ROTATION_90 == rotation || Surface.ROTATION_270 == rotation) {
                     bufferRect.offset(centerX - bufferRect.centerX(), centerY - bufferRect.centerY());
                     matrix.setRectToRect(viewRect, bufferRect, Matrix.ScaleToFit.FILL);
