@@ -460,57 +460,79 @@ public class CameraPreview extends AutoFitTextureView{
     @Override
     public void takePicture() {
         super.takePicture();
-        if (mCamera != null)
-            mCamera.takePicture(null, null, new Camera.PictureCallback() {
+
+        if (mCamera != null) {
+            mCamera.autoFocus(new Camera.AutoFocusCallback() {
                 @Override
-                public void onPictureTaken(byte[] bytes, Camera camera) {
-                    if (bytes != null) {
-                        Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
+                public void onAutoFocus(boolean success, Camera camera) {
+                    LOG.d("onAutoFocus() : " + success);
 
-                        // Daniel (2016-08-26 14:01:20): Current Device rotation
-                        WindowManager windowManager = (WindowManager) getContext().getSystemService(Context.WINDOW_SERVICE);
-                        int displayRotation = windowManager.getDefaultDisplay().getRotation();
-                        LOG.d("Current device rotation : " + ORIENTATIONS.get(displayRotation));
-
-                        int result = (mSensorOrientation - ORIENTATIONS.get(displayRotation) + 360) % 360;
-
-                        Bitmap rotatedBitmap = null;
-
-                        if (result % 360 != 0)
-                            rotatedBitmap = rotateImage(bitmap, result);
-
-                        File pictureFile = getOutputMediaFile();
-                        if (pictureFile == null) {
-                            return;
-                        }
-                        try {
-                            FileOutputStream fos = new FileOutputStream(pictureFile);
-
-                            if (rotatedBitmap != null)
-                                rotatedBitmap.compress(Bitmap.CompressFormat.JPEG, 95, fos);
-                            else
-                                bitmap.compress(Bitmap.CompressFormat.JPEG, 95, fos);
-
-                            fos.close();
-                        } catch (FileNotFoundException e) {
-
-                        } catch (IOException e) {
-                        } finally {
-                            LOG.d("File path : " + pictureFile.getAbsolutePath());
-
-                            if (onTakePictureListener != null && pictureFile != null)
-                                onTakePictureListener.onTakePicture(pictureFile);
-
-                            try {
-                                if (mCamera != null) {
-                                    mCamera.stopPreview();
-                                    mCamera.startPreview();
-                                }
-                            } catch (Exception egnored){}
-                        }
-                    }
+                    // Daniel (2016-11-03 16:12:52): Start taking picture
+                    captureStillPicture();
                 }
             });
+        }
+    }
+
+    /**
+     * Try to capture a still image from preview
+     */
+    private void captureStillPicture() {
+        try {
+            if (mCamera != null)
+                mCamera.takePicture(null, null, new Camera.PictureCallback() {
+                    @Override
+                    public void onPictureTaken(byte[] bytes, Camera camera) {
+                        if (bytes != null) {
+                            Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
+
+                            // Daniel (2016-08-26 14:01:20): Current Device rotation
+                            WindowManager windowManager = (WindowManager) getContext().getSystemService(Context.WINDOW_SERVICE);
+                            int displayRotation = windowManager.getDefaultDisplay().getRotation();
+                            LOG.d("Current device rotation : " + ORIENTATIONS.get(displayRotation));
+
+                            int result = (mSensorOrientation - ORIENTATIONS.get(displayRotation) + 360) % 360;
+
+                            Bitmap rotatedBitmap = null;
+
+                            if (result % 360 != 0)
+                                rotatedBitmap = rotateImage(bitmap, result);
+
+                            File pictureFile = getOutputMediaFile();
+                            if (pictureFile == null) {
+                                return;
+                            }
+                            try {
+                                FileOutputStream fos = new FileOutputStream(pictureFile);
+
+                                if (rotatedBitmap != null)
+                                    rotatedBitmap.compress(Bitmap.CompressFormat.JPEG, 95, fos);
+                                else
+                                    bitmap.compress(Bitmap.CompressFormat.JPEG, 95, fos);
+
+                                fos.close();
+                            } catch (FileNotFoundException e) {
+
+                            } catch (IOException e) {
+                            } finally {
+                                LOG.d("File path : " + pictureFile.getAbsolutePath());
+
+                                if (onTakePictureListener != null && pictureFile != null)
+                                    onTakePictureListener.onTakePicture(pictureFile);
+
+                                try {
+                                    if (mCamera != null) {
+                                        mCamera.stopPreview();
+                                        mCamera.startPreview();
+                                    }
+                                } catch (Exception egnored){}
+                            }
+                        }
+                    }
+                });
+        } catch (Exception e){
+            e.printStackTrace();
+        }
     }
 
     @Override
@@ -621,7 +643,7 @@ public class CameraPreview extends AutoFitTextureView{
                 .format(new Date());
         File mediaFile;
         mediaFile = new File(mediaStorageDir.getPath() + File.separator
-                + "IMG_" + timeStamp + ".jpg");
+                + "CameraLibrary.jpg");
 
         return mediaFile;
     }
