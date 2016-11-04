@@ -221,7 +221,8 @@ public class CameraPreview extends AutoFitTextureView{
         // 8. choose Optimal Picture size!
         mPictureSize = chooseOptimalSize(mCamera.getParameters().getSupportedPictureSizes(),
                 rotatedPreviewWidth, rotatedPreviewHeight, maxPreviewWidth, maxPreviewHeight,
-                largestPictureSize);
+                largestPreviewSize);
+        // Daniel (2016-11-04 12:18:33): Change largestPreviewSize to largestPictureSize for better ratio
         LOG.d("8. Optimal Picture size : " + mPictureSize.width + " , " + mPictureSize.height);
 
         // 9. According to orientation, change SurfaceView size
@@ -452,6 +453,9 @@ public class CameraPreview extends AutoFitTextureView{
                 @Override
                 public void onAutoFocus(boolean success, Camera camera) {
                     LOG.d("onAutoFocus() : " + success);
+
+                    if (onTakePictureListener != null)
+                        onTakePictureListener.onLensFocused(success);
                 }
             });
         }
@@ -461,17 +465,8 @@ public class CameraPreview extends AutoFitTextureView{
     public void takePicture() {
         super.takePicture();
 
-        if (mCamera != null) {
-            mCamera.autoFocus(new Camera.AutoFocusCallback() {
-                @Override
-                public void onAutoFocus(boolean success, Camera camera) {
-                    LOG.d("onAutoFocus() : " + success);
-
-                    // Daniel (2016-11-03 16:12:52): Start taking picture
-                    captureStillPicture();
-                }
-            });
-        }
+        // Daniel (2016-11-03 16:12:52): Start taking picture
+        captureStillPicture();
     }
 
     /**
@@ -512,8 +507,9 @@ public class CameraPreview extends AutoFitTextureView{
 
                                 fos.close();
                             } catch (FileNotFoundException e) {
-
+                                e.printStackTrace();
                             } catch (IOException e) {
+                                e.printStackTrace();
                             } finally {
                                 LOG.d("File path : " + pictureFile.getAbsolutePath());
 
@@ -525,7 +521,9 @@ public class CameraPreview extends AutoFitTextureView{
                                         mCamera.stopPreview();
                                         mCamera.startPreview();
                                     }
-                                } catch (Exception egnored){}
+                                } catch (Exception e){
+                                    e.printStackTrace();
+                                }
                             }
                         }
                     }
@@ -643,7 +641,7 @@ public class CameraPreview extends AutoFitTextureView{
                 .format(new Date());
         File mediaFile;
         mediaFile = new File(mediaStorageDir.getPath() + File.separator
-                + "CameraLibrary.jpg");
+                + "CameraLibrary_"+ timeStamp +"_.jpg");
 
         return mediaFile;
     }

@@ -158,4 +158,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             e.printStackTrace();
         }
     }
+
+    @Override
+    public void onLensFocused(boolean isFocused) {
+        Toast.makeText(this, "Lens focused : " + isFocused, Toast.LENGTH_SHORT).show();
+    }
 }

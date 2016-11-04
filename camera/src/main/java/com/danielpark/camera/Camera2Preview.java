@@ -102,10 +102,12 @@ public class Camera2Preview extends AutoFitTextureView {
         STATE_PICTURE_TAKEN,    // Picture was taken
     }
 
-    /** A {@link Handler} key when it starts taking a picture */
-    private final static int DELIVER_START_TAKING_PICTURE = 4423;
+    /** A {@link Handler} key when it succeeds to focus lens */
+    private final static int DELIVER_LENS_FOCUS_SUCCEED = 4423;
+    /** A {@link Handler} key when it fails focusing lens */
+    private final static int DELIVER_LENS_FOCUS_FAILED = 4424;
     /** A {@link Handler} key when finished creating photo */
-    private final static int DELIVER_FINISHED_TAKING_PICTURE = 4424;
+    private final static int DELIVER_FINISHED_TAKING_PICTURE = 4425;
 
     private OnTakePictureListener onTakePictureListener;
 
@@ -199,15 +201,21 @@ public class Camera2Preview extends AutoFitTextureView {
                 LOG.d("handleMessage : " + msg.toString());
 
             switch (msg.what) {
-                case DELIVER_START_TAKING_PICTURE: {
-                    captureStillPicture();
+                case DELIVER_LENS_FOCUS_SUCCEED: {
+                    if (onTakePictureListener != null)
+                        onTakePictureListener.onLensFocused(true);
+                    break;
                 }
-                break;
+                case DELIVER_LENS_FOCUS_FAILED: {
+                    if (onTakePictureListener != null)
+                        onTakePictureListener.onLensFocused(false);
+                    break;
+                }
                 case DELIVER_FINISHED_TAKING_PICTURE: {
                     if (onTakePictureListener != null && mTakePictureFile != null)
                         onTakePictureListener.onTakePicture(mTakePictureFile);
+                    break;
                 }
-                break;
             }
         }
     };
@@ -237,8 +245,6 @@ public class Camera2Preview extends AutoFitTextureView {
                                        @NonNull CaptureRequest request,
                                        @NonNull TotalCaptureResult result) {
 
-            LOG.d("onCaptureCompleted : " + mState.name());
-
             switch (mState) {
                 case STATE_PREVIEW: {
                     break;
@@ -246,25 +252,36 @@ public class Camera2Preview extends AutoFitTextureView {
                 case STATE_WAITING_LOCK: {
                     Integer afState = result.get(CaptureResult.CONTROL_AF_STATE);
                     if (afState == null) {
-                        mState = STATE_PICTURE_TAKEN;
-                        // TODO: Just capture the image
+                        LOG.d("onCaptureCompleted : " + mState.name());
+                        mState = STATE_PREVIEW;
 
-                        // Focused locked
+                        // No information
                         if (mOnImageFinishedHandler != null) {
-                            mOnImageFinishedHandler.sendEmptyMessage(DELIVER_START_TAKING_PICTURE);
+                            mOnImageFinishedHandler.sendEmptyMessageDelayed(DELIVER_LENS_FOCUS_FAILED, 100);
                         }
                     }
                     else if (afState == CaptureResult.CONTROL_AF_STATE_FOCUSED_LOCKED) {
+                        LOG.d("onCaptureCompleted : " + mState.name());
                         mState = STATE_LOCKED;
 
                         // Focused locked
                         if (mOnImageFinishedHandler != null) {
-                            mOnImageFinishedHandler.sendEmptyMessage(DELIVER_START_TAKING_PICTURE);
+                            mOnImageFinishedHandler.sendEmptyMessageDelayed(DELIVER_LENS_FOCUS_SUCCEED, 100);
                         }
                     }
                     else if (afState == CaptureResult.CONTROL_AF_STATE_NOT_FOCUSED_LOCKED) {
-                        // TODO: Tell user that retry auto focus or take picture again
+                        LOG.d("onCaptureCompleted : " + mState.name());
+                        mState = STATE_LOCKED;
+
+                        // Not focused
+                        if (mOnImageFinishedHandler != null) {
+                            mOnImageFinishedHandler.sendEmptyMessageDelayed(DELIVER_LENS_FOCUS_FAILED, 100);
+                        }
                     }
+                    break;
+                }
+                case STATE_LOCKED: {
+
                     break;
                 }
             }
@@ -424,7 +441,7 @@ public class Camera2Preview extends AutoFitTextureView {
 
                 if (swappedDimensions) {
                     rotatedPreviewWidth = height;
-                    rotatedPreviewWidth = width;
+                    rotatedPreviewHeight = width;
                     maxPreviewWidth = resolutionSize.y;
                     maxPreviewHeight = resolutionSize.x;
                 }
@@ -680,15 +697,13 @@ public class Camera2Preview extends AutoFitTextureView {
     @Override
     public void autoFocus() {
         super.autoFocus();
-        try {
             // Start AF trigger
-            mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER,
-                    CameraMetadata.CONTROL_AF_TRIGGER_START);
+//            mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER,
+//                    CameraMetadata.CONTROL_AF_TRIGGER_START);
+//
+//            mCameraCaptureSession.capture(mPreviewRequestBuilder.build(), null, null);
 
-            mCameraCaptureSession.capture(mPreviewRequestBuilder.build(), null, null);
-        } catch (CameraAccessException e) {
-            e.printStackTrace();
-        }
+            lockFocus();
     }
 
     /**
@@ -731,7 +746,8 @@ public class Camera2Preview extends AutoFitTextureView {
     @Override
     public void takePicture() {
         super.takePicture();
-        lockFocus();
+
+        captureStillPicture();
     }
 
     /**
@@ -933,7 +949,8 @@ public class Camera2Preview extends AutoFitTextureView {
                 }
 
                 // Daniel (2016-11-02 12:09:01): When FileOutputStream process has finished, report result to handler
-                mHandler.sendEmptyMessage(DELIVER_FINISHED_TAKING_PICTURE);
+                if (mHandler != null)
+                    mHandler.sendEmptyMessage(DELIVER_FINISHED_TAKING_PICTURE);
             }
         }
     }
@@ -954,7 +971,7 @@ public class Camera2Preview extends AutoFitTextureView {
                 .format(new Date());
         File mediaFile;
         mediaFile = new File(mediaStorageDir.getPath() + File.separator
-                + "CameraLibrary.jpg");
+                + "CameraLibrary_"+ timeStamp +"_.jpg");
 
         return mediaFile;
     }

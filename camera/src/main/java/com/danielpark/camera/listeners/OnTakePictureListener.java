@@ -10,5 +10,15 @@ import java.io.File;
  */
 public interface OnTakePictureListener {
 
+    /**
+     * Send a capture image file
+     * @param file
+     */
     void onTakePicture(@NonNull File file);
+
+    /**
+     * Check if camera lens is focused successfully
+     * @param isFocused
+     */
+    void onLensFocused(boolean isFocused);
 }
