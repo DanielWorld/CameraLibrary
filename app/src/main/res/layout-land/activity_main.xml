@@ -19,20 +19,19 @@
     <FrameLayout
         android:id="@+id/container"
         android:background="@android:color/black"
-        app:layout_widthPercent="100%"
-        app:layout_heightPercent="80%"
-        android:layout_centerHorizontal="true" />
+        app:layout_widthPercent="80%"
+        app:layout_heightPercent="100%"
+        android:layout_centerVertical="true"/>
 
     <RelativeLayout
         android:id="@+id/bottomView"
-        android:layout_width="match_parent"
-        app:layout_heightPercent="20%"
+        app:layout_widthPercent="20%"
+        android:layout_height="match_parent"
         android:background="@android:color/holo_orange_light"
         android:text="Button"
         android:textColor="@android:color/white"
-        android:layout_alignParentBottom="true"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentStart="true">
+        android:layout_alignParentRight="true"
+        android:layout_alignParentEnd="true">
 
         <ImageButton
             style="?android:attr/buttonStyleSmall"
@@ -49,9 +48,7 @@
             android:layout_height="wrap_content"
             android:src="@mipmap/ic_camera_enhance_black_24dp"
             android:id="@+id/takePictureBtn"
-            android:layout_below="@+id/autoFocusBtn"
-            android:layout_alignLeft="@+id/autoFocusBtn"
-            android:layout_alignStart="@+id/autoFocusBtn" />
+            android:layout_below="@+id/autoFocusBtn"/>
 
         <ImageButton
             style="?android:attr/buttonStyleSmall"
@@ -59,8 +56,7 @@
             android:layout_height="wrap_content"
             android:src="@mipmap/ic_settings_black_24dp"
             android:id="@+id/settingBtn"
-            android:layout_below="@+id/autoFocusBtn"
-            android:layout_toRightOf="@+id/takePictureBtn"/>
+            android:layout_below="@+id/takePictureBtn"/>
 
         <ImageButton
             style="?android:attr/buttonStyleSmall"
@@ -68,15 +64,12 @@
             android:layout_height="wrap_content"
             android:src="@mipmap/ic_wb_incandescent_black_24dp"
             android:id="@+id/flashBtn"
-            android:layout_above="@+id/takePictureBtn"
-            android:layout_toRightOf="@+id/takePictureBtn"
-            android:layout_toEndOf="@+id/takePictureBtn" />
+            android:layout_below="@+id/settingBtn"/>
 
         <ImageView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:id="@+id/imageView"
-            android:layout_toRightOf="@+id/flashBtn"
-            android:layout_toEndOf="@+id/flashBtn" />
+            android:layout_below="@+id/flashBtn" />
     </RelativeLayout>
 </android.support.percent.PercentRelativeLayout>

@@ -260,6 +260,18 @@ public class CameraPreview extends AutoFitTextureView{
     RectF mConfigureTransformMargin = new RectF();
 
     /**
+     * Initialize transform margin
+     */
+    private void initializeTransformMargin() {
+        if (mConfigureTransformMargin == null) return;
+
+        mConfigureTransformMargin.left = 0;
+        mConfigureTransformMargin.right = 0;
+        mConfigureTransformMargin.top = 0;
+        mConfigureTransformMargin.bottom = 0;
+    }
+
+    /**
      * Configures the necessary {@link android.graphics.Matrix} transformation to `mTextureView`.
      * This method should be called after the camera preview size is determined in
      * setUpCameraOutputs and also the size of `mTextureView` is fixed.
@@ -309,14 +321,27 @@ public class CameraPreview extends AutoFitTextureView{
                 switch (rotation) {
                     // TODO: Test needed
                     case Surface.ROTATION_0: {
-                        bufferRect.offset(centerX - bufferRect.centerX(), centerY - bufferRect.centerY());
-                        matrix.setRectToRect(viewRect, bufferRect, Matrix.ScaleToFit.FILL);
+                        if (mConfigureTransformMargin == null) mConfigureTransformMargin = new RectF();
+                        final float offset_x = (centerX - bufferRect.centerX());
+                        final float offset_y = (centerY - bufferRect.centerY());
 
-                        float scale = Math.max(
-                                (float) viewHeight / mPreviewSize.height,
-                                (float) viewWidth / mPreviewSize.width);
-                        LOG.d("scale : " + scale);
-//                    matrix.postScale(scale, scale, centerX, centerY);
+                        LOG.d("offset x  : " + offset_x);
+                        LOG.d("offset y : " + offset_y);
+
+                        initializeTransformMargin();
+
+                        // if offset is positive then we don't need to add margin
+                        if (offset_x < 0) {
+                            mConfigureTransformMargin.left = offset_x;
+                            mConfigureTransformMargin.right = offset_x;
+                        }
+                        if (offset_y < 0) {
+                            mConfigureTransformMargin.top = offset_y;
+                            mConfigureTransformMargin.bottom = offset_y;
+                        }
+
+                        bufferRect.offset(offset_x, offset_y);
+                        matrix.setRectToRect(viewRect, bufferRect, Matrix.ScaleToFit.FILL);
                         break;
                     }
                     // Daniel (2016-11-05 13:37:19): Test Proved!
@@ -325,34 +350,54 @@ public class CameraPreview extends AutoFitTextureView{
                         bufferRect = new RectF(0, 0, mPreviewSize.height, mPreviewSize.width);
 
                         if (mConfigureTransformMargin == null) mConfigureTransformMargin = new RectF();
-                        LOG.d("offset x  : " + (centerX - bufferRect.centerX()));
-                        LOG.d("offset y : " + (centerY - bufferRect.centerY()));
-                        mConfigureTransformMargin.left = (centerX - bufferRect.centerY());
-                        mConfigureTransformMargin.top = (centerY - bufferRect.centerX());
-                        mConfigureTransformMargin.right = (centerX - bufferRect.centerY());
-                        mConfigureTransformMargin.bottom = (centerY - bufferRect.centerX());
+                        final float offset_x = (centerX - bufferRect.centerX());
+                        final float offset_y = (centerY - bufferRect.centerY());
 
-                        bufferRect.offset(centerX - bufferRect.centerX(), centerY - bufferRect.centerY());
+                        LOG.d("offset x  : " + offset_x);
+                        LOG.d("offset y : " + offset_y);
 
+                        initializeTransformMargin();
+
+                        // if offset is positive then we don't need to add margin
+                        // TODO: device rotation is 90, which means X, Y coordinates should be converted to each other.
+                        if (centerX - bufferRect.centerY() < 0) {
+                            mConfigureTransformMargin.left = centerX - bufferRect.centerY();
+                            mConfigureTransformMargin.right = centerX - bufferRect.centerY();
+                        }
+                        if (centerY - bufferRect.centerX() < 0) {
+                            mConfigureTransformMargin.top = centerY - bufferRect.centerX();
+                            mConfigureTransformMargin.bottom = centerY - bufferRect.centerX();
+                        }
+
+                        bufferRect.offset(offset_x, offset_y);
                         matrix.setRectToRect(viewRect, bufferRect, Matrix.ScaleToFit.FILL);
-//                        float scale = Math.max(
-//                                (float) viewHeight / mPreviewSize.height,
-//                                (float) viewWidth / mPreviewSize.width);
-//                        LOG.d("scale : " + scale);
-//                      matrix.postScale(scale, scale, centerX, centerY);
                         matrix.postRotate(-90, centerX, centerY);
                         break;
                     }
                     // TODO: Test needed
                     case Surface.ROTATION_180: {
-                        bufferRect.offset(centerX - bufferRect.centerX(), centerY - bufferRect.centerY());
+                        if (mConfigureTransformMargin == null) mConfigureTransformMargin = new RectF();
+                        final float offset_x = (centerX - bufferRect.centerX());
+                        final float offset_y = (centerY - bufferRect.centerY());
+
+                        LOG.d("offset x  : " + offset_x);
+                        LOG.d("offset y : " + offset_y);
+
+                        initializeTransformMargin();
+
+                        // if offset is positive then we don't need to add margin
+                        if (offset_x < 0) {
+                            mConfigureTransformMargin.left = offset_x;
+                            mConfigureTransformMargin.right = offset_x;
+                        }
+                        if (offset_y < 0) {
+                            mConfigureTransformMargin.top = offset_y;
+                            mConfigureTransformMargin.bottom = offset_y;
+                        }
+
+                        bufferRect.offset(offset_x, offset_y);
                         matrix.setRectToRect(viewRect, bufferRect, Matrix.ScaleToFit.FILL);
-                        float scale = Math.max(
-                                (float) viewHeight / mPreviewSize.height,
-                                (float) viewWidth / mPreviewSize.width);
-                        LOG.d("scale : " + scale);
-//                    matrix.postScale(scale, scale, centerX, centerY);
-                            matrix.postRotate(180, centerX, centerY);
+                        matrix.postRotate(-180, centerX, centerY);
                         break;
                     }
                     // Daniel (2016-11-05 13:30:30): Test Proved!
@@ -361,22 +406,33 @@ public class CameraPreview extends AutoFitTextureView{
                         bufferRect = new RectF(0, 0, mPreviewSize.height, mPreviewSize.width);
 
                         if (mConfigureTransformMargin == null) mConfigureTransformMargin = new RectF();
-                        LOG.d("offset x  : " + (centerX - bufferRect.centerX()));
-                        LOG.d("offset y : " + (centerY - bufferRect.centerY()));
-                        mConfigureTransformMargin.left = (centerX - bufferRect.centerY());
-                        mConfigureTransformMargin.top = (centerY - bufferRect.centerX());
-                        mConfigureTransformMargin.right = (centerX - bufferRect.centerY());
-                        mConfigureTransformMargin.bottom = (centerY - bufferRect.centerX());
+                        final float offset_x = (centerX - bufferRect.centerX());
+                        final float offset_y = (centerY - bufferRect.centerY());
 
-                        bufferRect.offset(centerX - bufferRect.centerX(), centerY - bufferRect.centerY());
+                        LOG.d("offset x  : " + offset_x);
+                        LOG.d("offset y : " + offset_y);
 
+                        initializeTransformMargin();
+
+                        // if offset is positive then we don't need to add margin
+                        // TODO: device rotation is 270, which means X, Y coordinates should be converted to each other.
+                        if (centerX - bufferRect.centerY() < 0) {
+                            mConfigureTransformMargin.left = centerX - bufferRect.centerY();
+                            mConfigureTransformMargin.right = centerX - bufferRect.centerY();
+                        }
+                        if (centerY - bufferRect.centerX() < 0) {
+                            mConfigureTransformMargin.top = centerY - bufferRect.centerX();
+                            mConfigureTransformMargin.bottom = centerY - bufferRect.centerX();
+                        }
+
+                        bufferRect.offset(offset_x, offset_y);
                         matrix.setRectToRect(viewRect, bufferRect, Matrix.ScaleToFit.FILL);
 //                        float scale = Math.max(
 //                                (float) viewHeight / mPreviewSize.height,
 //                                (float) viewWidth / mPreviewSize.width);
 //                        LOG.d("scale : " + scale);
 //                      matrix.postScale(scale, scale, centerX, centerY);
-                        matrix.postRotate(90, centerX, centerY);
+                        matrix.postRotate(-270, centerX, centerY);
                         break;
                     }
                 }
@@ -388,21 +444,28 @@ public class CameraPreview extends AutoFitTextureView{
                         bufferRect = new RectF(0, 0, mPreviewSize.height, mPreviewSize.width);
 
                         if (mConfigureTransformMargin == null) mConfigureTransformMargin = new RectF();
-                        LOG.d("offset x  : " + (centerX - bufferRect.centerX()));
-                        LOG.d("offset y : " + (centerY - bufferRect.centerY()));
-                        mConfigureTransformMargin.left = 0;
-                        mConfigureTransformMargin.top = 0;
-                        mConfigureTransformMargin.right = centerX - bufferRect.centerX();
-                        mConfigureTransformMargin.bottom = centerY - bufferRect.centerY();
+                        final float offset_x = (centerX - bufferRect.centerX());
+                        final float offset_y = (centerY - bufferRect.centerY());
 
+                        LOG.d("offset x  : " + offset_x);
+                        LOG.d("offset y : " + offset_y);
+
+                        initializeTransformMargin();
+
+                        // if offset is positive then we don't need to add margin
+                        if (offset_x < 0) {
+                            mConfigureTransformMargin.left = offset_x;
+                            mConfigureTransformMargin.right = offset_x;
+                        }
+                        if (offset_y < 0) {
+                            mConfigureTransformMargin.top = offset_y;
+                            mConfigureTransformMargin.bottom = offset_y;
+                        }
+
+                        bufferRect.offset(offset_x, offset_y);
                         matrix.setRectToRect(viewRect, bufferRect, Matrix.ScaleToFit.FILL);
-                        // Daniel (2016-11-05 12:07:57): disable scale for now
-//                        float scale = Math.max(
-//                                (float) viewHeight / mPreviewSize.height,
-//                                (float) viewWidth / mPreviewSize.width);
-//                        LOG.d("scale : " + scale);
-//                      matrix.postScale(scale, scale, centerX, centerY);
-                        matrix.postRotate(90 - mSensorOrientation, centerX, centerY);
+                        // No need to rotate view, because unlike Camear2 API,
+                        // Camera 1 API has setDisplayOrientation();
                         break;
                     }
                     // TODO : Test needed

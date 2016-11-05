@@ -65,6 +65,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             cameraPreview =  CameraApiChecker.getInstance().build(this);
             containerView.addView(cameraPreview);
 
+            /**
+             * Daniel (2016-11-05 18:42:58): It is required to listen taking a picture event, and auto-focus event
+             */
             cameraPreview.setOnTakePictureListener(this);
 
             cameraPreview.setOnTouchListener(new View.OnTouchListener() {
