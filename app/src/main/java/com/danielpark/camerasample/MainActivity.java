@@ -6,6 +6,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
 import android.support.annotation.NonNull;
+import android.support.percent.PercentRelativeLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -13,6 +14,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
 import android.widget.FrameLayout;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
@@ -43,15 +45,17 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         FrameLayout containerView = (FrameLayout) findViewById(R.id.container);
         TextView topView = (TextView) findViewById(R.id.topView);
         RelativeLayout bottomView = (RelativeLayout) findViewById(R.id.bottomView);
-        Button button = (Button) findViewById(R.id.autoFocusBtn);
-        Button button2 = (Button) findViewById(R.id.takePictureBtn);
-        Button button3 = (Button) findViewById(R.id.flashBtn);
+        ImageButton button = (ImageButton) findViewById(R.id.autoFocusBtn);
+        ImageButton button2 = (ImageButton) findViewById(R.id.takePictureBtn);
+        ImageButton button3 = (ImageButton) findViewById(R.id.flashBtn);
+        ImageButton button4 = (ImageButton) findViewById(R.id.settingBtn);
 
         thumbnail = (ImageView) findViewById(R.id.imageView);
 
         button.setOnClickListener(this);
         button2.setOnClickListener(this);
         button3.setOnClickListener(this);
+        button4.setOnClickListener(this);
 
         // Daniel (2016-08-23 10:45:00): Turn on CameraLogger Log switch
         CameraLogger.enable();
@@ -134,6 +138,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 break;
             case R.id.flashBtn:
                 cameraPreview.flashTorch();
+                break;
+            case R.id.settingBtn:
                 break;
         }
     }
