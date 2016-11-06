@@ -10,6 +10,7 @@ import android.graphics.Matrix;
 import android.graphics.Point;
 import android.graphics.RectF;
 import android.graphics.SurfaceTexture;
+import android.hardware.SensorManager;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
@@ -31,6 +32,7 @@ import android.support.annotation.NonNull;
 import android.util.Log;
 import android.util.Size;
 import android.util.SparseIntArray;
+import android.view.OrientationEventListener;
 import android.view.Surface;
 import android.view.TextureView;
 import android.view.WindowManager;
@@ -55,7 +57,6 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 import static com.danielpark.camera.Camera2Preview.CameraState.STATE_LOCKED;
-import static com.danielpark.camera.Camera2Preview.CameraState.STATE_PICTURE_TAKEN;
 import static com.danielpark.camera.Camera2Preview.CameraState.STATE_PREVIEW;
 import static com.danielpark.camera.Camera2Preview.CameraState.STATE_WAITING_LOCK;
 
@@ -112,7 +113,10 @@ public class Camera2Preview extends AutoFitTextureView {
     /** A {@link Handler} key when finished creating photo */
     private final static int DELIVER_FINISHED_TAKING_PICTURE = 4425;
 
+    /** Last changed orientation */
+    private int mLastOrientation;
     private OnTakePictureListener onTakePictureListener;
+    private OrientationEventListener mOrientationEventListener;
 
     private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
 
@@ -295,6 +299,12 @@ public class Camera2Preview extends AutoFitTextureView {
     public void openCamera(SurfaceTexture surfaceTexture, int width, int height) throws CameraAccessException, SecurityException {
 //        super.openCamera(surfaceTexture, width, height);
         LOG.d("openCamera() : " + width + " , " + height);
+
+        /**
+         * If OrientationEventListener is available then open it
+         */
+        if (mOrientationEventListener != null && mOrientationEventListener.canDetectOrientation())
+            mOrientationEventListener.enable();
 
         // Daniel (2016-10-25 23:32:40): Start handler thread
         startBackgroundThread();
@@ -905,6 +915,21 @@ public class Camera2Preview extends AutoFitTextureView {
         }
     }
 
+    /**
+     * Convert last changed orientation to correct degree
+     * @param mLastOrientation
+     * @return
+     */
+    private int getLastOrientation(int mLastOrientation) {
+        if (mLastOrientation >= 45 && mLastOrientation <= 90 + 45)
+            return 90;
+        else if (mLastOrientation >= 90 + 45 && mLastOrientation <= 90 * 2 + 45)
+            return 180;
+        else if (mLastOrientation >= 90 * 2 + 45 && mLastOrientation <= 90 * 3 + 45)
+            return 270;
+        return 0;
+    }
+
     @Override
     public void takePicture() {
         super.takePicture();
@@ -930,7 +955,7 @@ public class Camera2Preview extends AutoFitTextureView {
                 LOG.d("Current device rotation : " + ORIENTATIONS.get(displayRotation));
 
                 int result = (mSensorOrientation - ORIENTATIONS.get(displayRotation) + 360) % 360;
-                captureBuilder.set(CaptureRequest.JPEG_ORIENTATION, result);
+                captureBuilder.set(CaptureRequest.JPEG_ORIENTATION, (result + getLastOrientation(mLastOrientation)) % 360);
 
                 final CameraCaptureSession.CaptureCallback CaptureCallback
                         = new CameraCaptureSession.CaptureCallback() {
@@ -987,6 +1012,35 @@ public class Camera2Preview extends AutoFitTextureView {
         this.onTakePictureListener = onTakePictureListener;
     }
 
+    @Override
+    public void setOrientationEventListener(boolean isEnabled) {
+        super.setOrientationEventListener(isEnabled);
+
+        if (isEnabled) {
+            if (mOrientationEventListener == null) {
+                mOrientationEventListener = new OrientationEventListener(getContext(),
+                        SensorManager.SENSOR_DELAY_NORMAL) {
+                    @Override
+                    public void onOrientationChanged(int orientation) {
+                        LOG.d("Orientation : " + orientation);
+                        if (orientation != -1)
+                            mLastOrientation = orientation;
+                    }
+                };
+            }
+
+            if (mOrientationEventListener != null && mOrientationEventListener.canDetectOrientation())
+                mOrientationEventListener.enable();
+        } else {
+            if (mOrientationEventListener != null) {
+                mOrientationEventListener.disable();
+                mOrientationEventListener = null;
+            }
+
+            mLastOrientation = 0;
+        }
+    }
+
     /**
      * You must call this method to release Camera
      */
@@ -994,6 +1048,9 @@ public class Camera2Preview extends AutoFitTextureView {
     public void releaseCamera() {
 //        super.releaseCamera();
         LOG.d("release camera");
+
+        if (mOrientationEventListener != null)
+            mOrientationEventListener.disable();
 
         try {
             closeCamera();
@@ -1007,6 +1064,11 @@ public class Camera2Preview extends AutoFitTextureView {
     @Override
     public void finishCamera() {
         super.finishCamera();
+
+        if (mOrientationEventListener != null) {
+            mOrientationEventListener.disable();
+            mOrientationEventListener = null;
+        }
 
         try {
             mOnImageFinishedHandler = null;

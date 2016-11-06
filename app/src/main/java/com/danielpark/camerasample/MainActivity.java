@@ -1,18 +1,13 @@
 package com.danielpark.camerasample;
 
 import android.Manifest;
-import android.graphics.BitmapFactory;
-import android.net.Uri;
 import android.os.Build;
-import android.os.Environment;
 import android.support.annotation.NonNull;
-import android.support.percent.PercentRelativeLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
-import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.ImageView;
@@ -69,6 +64,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
              * Daniel (2016-11-05 18:42:58): It is required to listen taking a picture event, and auto-focus event
              */
             cameraPreview.setOnTakePictureListener(this);
+            cameraPreview.setOrientationEventListener(true);
 
             cameraPreview.setOnTouchListener(new View.OnTouchListener() {
                 @Override

@@ -1,7 +1,6 @@
 package com.danielpark.camera.util;
 
 import android.content.Context;
-import android.graphics.Matrix;
 import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraAccessException;
 import android.support.annotation.CallSuper;
@@ -96,6 +95,11 @@ public class AutoFitTextureView extends TextureView implements ControlInterface{
 
     @Override
     public void setOnTakePictureListener(OnTakePictureListener listener) {
+
+    }
+
+    @Override
+    public void setOrientationEventListener(boolean isEnabled) {
 
     }
 

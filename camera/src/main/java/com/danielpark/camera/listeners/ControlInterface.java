@@ -41,6 +41,13 @@ public interface ControlInterface {
     void setOnTakePictureListener(OnTakePictureListener listener);
 
     /**
+     * Enable or disable Orientation event listener <br>
+     *     if it is <b>true</b> then, it is applied to taken picture
+     * @param isEnabled
+     */
+    void setOrientationEventListener(boolean isEnabled);
+
+    /**
      * Release Camera
      */
     void releaseCamera();
