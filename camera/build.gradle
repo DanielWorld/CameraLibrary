@@ -18,7 +18,7 @@ publish {
     userOrg = 'danielworld'
     groupId = 'com.danielworld'
     artifactId = 'camera-library'
-    publishVersion = '1.0.2'
+    publishVersion = '1.0.3'
     desc = 'A camera library which supports Camera API and Camera2 API in Android Application'
     website = 'https://github.com/DanielWorld/CameraLibrary'
     issueTracker = "${website}/issues"
@@ -33,7 +33,7 @@ android {
         minSdkVersion 15
         targetSdkVersion 24
         versionCode 1
-        versionName "1.0.2"
+        versionName "1.0.3"
     }
     buildTypes {
         debug {
