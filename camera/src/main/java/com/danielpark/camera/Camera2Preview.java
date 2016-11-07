@@ -113,8 +113,11 @@ public class Camera2Preview extends AutoFitTextureView {
     /** A {@link Handler} key when finished creating photo */
     private final static int DELIVER_FINISHED_TAKING_PICTURE = 4425;
 
+    /** Orientation event flag */
+    private boolean isOrientationEventAvailable = false;
     /** Last changed orientation */
     private int mLastOrientation;
+    private Integer mLastConvertedOrientation;
     private OnTakePictureListener onTakePictureListener;
     private OrientationEventListener mOrientationEventListener;
 
@@ -236,7 +239,8 @@ public class Camera2Preview extends AutoFitTextureView {
 
         @Override
         public void onImageAvailable(ImageReader reader) {
-            mBackgroundHandler.post(new ImageSaver(reader.acquireNextImage(), mTakePictureFile, mConfigureTransformMargin, mOnImageFinishedHandler));
+            mBackgroundHandler.post(new ImageSaver(reader.acquireNextImage(), mTakePictureFile
+                    , mConfigureTransformMargin, mLastConvertedOrientation, mOnImageFinishedHandler));
         }
     };
 
@@ -921,13 +925,50 @@ public class Camera2Preview extends AutoFitTextureView {
      * @return
      */
     private int getLastOrientation(int mLastOrientation) {
-        if (mLastOrientation >= 45 && mLastOrientation <= 90 + 45)
-            return 90;
-        else if (mLastOrientation >= 90 + 45 && mLastOrientation <= 90 * 2 + 45)
-            return 180;
-        else if (mLastOrientation >= 90 * 2 + 45 && mLastOrientation <= 90 * 3 + 45)
-            return 270;
-        return 0;
+        if (!isOrientationEventAvailable) return 0;
+
+        WindowManager windowManager = (WindowManager) getContext().getSystemService(Context.WINDOW_SERVICE);
+        int rotation = windowManager.getDefaultDisplay().getRotation();
+
+        int orientation = getResources().getConfiguration().orientation;
+
+        if (orientation == Configuration.ORIENTATION_PORTRAIT) {
+            if (rotation == Surface.ROTATION_0) {
+                if (mLastOrientation >= 45 && mLastOrientation <= 90 + 45)
+                    return 90;
+                else if (mLastOrientation >= 90 + 45 && mLastOrientation <= 90 * 2 + 45)
+                    return 180;
+                else if (mLastOrientation >= 90 * 2 + 45 && mLastOrientation <= 90 * 3 + 45)
+                    return 270;
+                return 0;
+            } else {
+                if (mLastOrientation >= 45 && mLastOrientation <= 90 + 45)
+                    return 0;
+                else if (mLastOrientation >= 90 + 45 && mLastOrientation <= 90 * 2 + 45)
+                    return 90;
+                else if (mLastOrientation >= 90 * 2 + 45 && mLastOrientation <= 90 * 3 + 45)
+                    return 180;
+                return 270;
+            }
+        } else {
+            if (rotation == Surface.ROTATION_0) {
+                if (mLastOrientation >= 45 && mLastOrientation <= 90 + 45)
+                    return 90;
+                else if (mLastOrientation >= 90 + 45 && mLastOrientation <= 90 * 2 + 45)
+                    return 180;
+                else if (mLastOrientation >= 90 * 2 + 45 && mLastOrientation <= 90 * 3 + 45)
+                    return 270;
+                return 0;
+            } else {
+                if (mLastOrientation >= 45 && mLastOrientation <= 90 + 45)
+                    return 180;
+                else if (mLastOrientation >= 90 + 45 && mLastOrientation <= 90 * 2 + 45)
+                    return 270;
+                else if (mLastOrientation >= 90 * 2 + 45 && mLastOrientation <= 90 * 3 + 45)
+                    return 0;
+                return 90;
+            }
+        }
     }
 
     @Override
@@ -955,7 +996,10 @@ public class Camera2Preview extends AutoFitTextureView {
                 LOG.d("Current device rotation : " + ORIENTATIONS.get(displayRotation));
 
                 int result = (mSensorOrientation - ORIENTATIONS.get(displayRotation) + 360) % 360;
-                captureBuilder.set(CaptureRequest.JPEG_ORIENTATION, (result + getLastOrientation(mLastOrientation)) % 360);
+                captureBuilder.set(CaptureRequest.JPEG_ORIENTATION, result);
+
+                // Save converted orientation
+                mLastConvertedOrientation = getLastOrientation(mLastOrientation);
 
                 final CameraCaptureSession.CaptureCallback CaptureCallback
                         = new CameraCaptureSession.CaptureCallback() {
@@ -1016,13 +1060,15 @@ public class Camera2Preview extends AutoFitTextureView {
     public void setOrientationEventListener(boolean isEnabled) {
         super.setOrientationEventListener(isEnabled);
 
+        isOrientationEventAvailable = isEnabled;
+
         if (isEnabled) {
             if (mOrientationEventListener == null) {
                 mOrientationEventListener = new OrientationEventListener(getContext(),
                         SensorManager.SENSOR_DELAY_NORMAL) {
                     @Override
                     public void onOrientationChanged(int orientation) {
-                        LOG.d("Orientation : " + orientation);
+//                        LOG.d("Orientation : " + orientation);
                         if (orientation != -1)
                             mLastOrientation = orientation;
                     }
@@ -1046,8 +1092,7 @@ public class Camera2Preview extends AutoFitTextureView {
      */
     @Override
     public void releaseCamera() {
-//        super.releaseCamera();
-        LOG.d("release camera");
+        LOG.d("Release Camera");
 
         if (mOrientationEventListener != null)
             mOrientationEventListener.disable();
@@ -1147,11 +1192,14 @@ public class Camera2Preview extends AutoFitTextureView {
 
         private RectF mConfigureTransformMargin;
 
-        public ImageSaver(Image image, File file, RectF configurationMargin, Handler handler) {
+        private Integer mLastOrientation;
+
+        public ImageSaver(Image image, File file, RectF configurationMargin, Integer lastOrientation, Handler handler) {
             mImage = image;
             mFile = file;
-            mHandler = handler;
             mConfigureTransformMargin = configurationMargin;
+            mLastOrientation = lastOrientation;
+            mHandler = handler;
         }
 
         private Bitmap cropImage(Bitmap bitmap) {
@@ -1162,6 +1210,22 @@ public class Camera2Preview extends AutoFitTextureView {
             LOG.d("Bitmap size : " + bitmap.getWidth() + " , " + bitmap.getHeight());
             Bitmap rotatedBitmap = Bitmap.createBitmap(bitmap, (int) Math.abs(mConfigureTransformMargin.left), (int) Math.abs(mConfigureTransformMargin.top),
                     (int) (bitmap.getWidth() - Math.abs(mConfigureTransformMargin.right * 2)), (int) (bitmap.getHeight() - Math.abs(mConfigureTransformMargin.bottom * 2)));
+            // TODO: Check if it is okay to recycle!!
+            if (bitmap != null && bitmap != rotatedBitmap && !bitmap.isRecycled())
+                bitmap.recycle();
+
+            return rotatedBitmap;
+        }
+
+        private Bitmap rotateImage(Bitmap bitmap, int degrees) {
+            if (bitmap == null) return bitmap;
+            if (degrees % 360 == 0)
+                return bitmap;
+
+            Matrix matrix = new Matrix();
+            matrix.postRotate(degrees);
+
+            Bitmap rotatedBitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
             // TODO: Check if it is okay to recycle!!
             if (bitmap != null && bitmap != rotatedBitmap && !bitmap.isRecycled())
                 bitmap.recycle();
@@ -1186,6 +1250,10 @@ public class Camera2Preview extends AutoFitTextureView {
                 } else {
                     Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
                     bitmap = cropImage(bitmap);
+
+                    if (mLastOrientation % 360 != 0)
+                        bitmap = rotateImage(bitmap, mLastOrientation);
+
                     bitmap.compress(Bitmap.CompressFormat.JPEG, 95, output);
 
                     // TODO: recycle Bitmap!!

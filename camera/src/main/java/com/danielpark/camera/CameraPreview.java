@@ -12,10 +12,12 @@ import android.graphics.PointF;
 import android.graphics.RectF;
 import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
+import android.hardware.SensorManager;
 import android.os.Environment;
 import android.util.Log;
 import android.util.SizeF;
 import android.util.SparseIntArray;
+import android.view.OrientationEventListener;
 import android.view.Surface;
 import android.view.TextureView;
 import android.view.WindowManager;
@@ -48,7 +50,12 @@ public class CameraPreview extends AutoFitTextureView{
     private Camera.Size mPictureSize;
     private int mSensorOrientation;
 
+    /** Orientation event flag */
+    private boolean isOrientationEventAvailable = false;
+    /** Last changed orientation */
+    private int mLastOrientation;
     private OnTakePictureListener onTakePictureListener;
+    private OrientationEventListener mOrientationEventListener;
 
     private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
 
@@ -93,6 +100,12 @@ public class CameraPreview extends AutoFitTextureView{
     @Override
     public void openCamera(SurfaceTexture surfaceTexture, int width, int height) {
         LOG.d("openCamera() : " + width + " , " + height);
+
+        /**
+         * If OrientationEventListener is available then open it
+         */
+        if (mOrientationEventListener != null && mOrientationEventListener.canDetectOrientation())
+            mOrientationEventListener.enable();
 
         if (mCamera == null)
             mCamera = Camera.open();
@@ -628,6 +641,58 @@ public class CameraPreview extends AutoFitTextureView{
         }
     }
 
+    /**
+     * Convert last changed orientation to correct degree
+     * @param mLastOrientation
+     * @return
+     */
+    private int getLastOrientation(int mLastOrientation) {
+        if (!isOrientationEventAvailable) return 0;
+
+        WindowManager windowManager = (WindowManager) getContext().getSystemService(Context.WINDOW_SERVICE);
+        int rotation = windowManager.getDefaultDisplay().getRotation();
+
+        int orientation = getResources().getConfiguration().orientation;
+
+        if (orientation == Configuration.ORIENTATION_PORTRAIT) {
+            if (rotation == Surface.ROTATION_0) {
+                if (mLastOrientation >= 45 && mLastOrientation <= 90 + 45)
+                    return 90;
+                else if (mLastOrientation >= 90 + 45 && mLastOrientation <= 90 * 2 + 45)
+                    return 180;
+                else if (mLastOrientation >= 90 * 2 + 45 && mLastOrientation <= 90 * 3 + 45)
+                    return 270;
+                return 0;
+            } else {
+                if (mLastOrientation >= 45 && mLastOrientation <= 90 + 45)
+                    return 0;
+                else if (mLastOrientation >= 90 + 45 && mLastOrientation <= 90 * 2 + 45)
+                    return 90;
+                else if (mLastOrientation >= 90 * 2 + 45 && mLastOrientation <= 90 * 3 + 45)
+                    return 180;
+                return 270;
+            }
+        } else {
+            if (rotation == Surface.ROTATION_0) {
+                if (mLastOrientation >= 45 && mLastOrientation <= 90 + 45)
+                    return 90;
+                else if (mLastOrientation >= 90 + 45 && mLastOrientation <= 90 * 2 + 45)
+                    return 180;
+                else if (mLastOrientation >= 90 * 2 + 45 && mLastOrientation <= 90 * 3 + 45)
+                    return 270;
+                return 0;
+            } else {
+                if (mLastOrientation >= 45 && mLastOrientation <= 90 + 45)
+                    return 180;
+                else if (mLastOrientation >= 90 + 45 && mLastOrientation <= 90 * 2 + 45)
+                    return 270;
+                else if (mLastOrientation >= 90 * 2 + 45 && mLastOrientation <= 90 * 3 + 45)
+                    return 0;
+                return 90;
+            }
+        }
+    }
+
     @Override
     public void takePicture() {
         super.takePicture();
@@ -666,6 +731,9 @@ public class CameraPreview extends AutoFitTextureView{
                             } else {
                                 rotatedBitmap = cropImage(bitmap);
                             }
+
+                            if (getLastOrientation(mLastOrientation) % 360 != 0)
+                                rotatedBitmap = rotateImage(rotatedBitmap, getLastOrientation(mLastOrientation));
 
                             File pictureFile = getOutputMediaFile();
                             if (pictureFile == null) {
@@ -768,13 +836,48 @@ public class CameraPreview extends AutoFitTextureView{
         onTakePictureListener = listener;
     }
 
+    @Override
+    public void setOrientationEventListener(boolean isEnabled) {
+        super.setOrientationEventListener(isEnabled);
+
+        isOrientationEventAvailable = isEnabled;
+
+        if (isEnabled) {
+            if (mOrientationEventListener == null) {
+                mOrientationEventListener = new OrientationEventListener(getContext(),
+                        SensorManager.SENSOR_DELAY_NORMAL) {
+                    @Override
+                    public void onOrientationChanged(int orientation) {
+//                        LOG.d("Orientation : " + orientation);
+                        if (orientation != -1)
+                            mLastOrientation = orientation;
+                    }
+                };
+            }
+
+            if (mOrientationEventListener != null && mOrientationEventListener.canDetectOrientation())
+                mOrientationEventListener.enable();
+        } else {
+            if (mOrientationEventListener != null) {
+                mOrientationEventListener.disable();
+                mOrientationEventListener = null;
+            }
+
+            mLastOrientation = 0;
+        }
+    }
+
     /**
      * You must call this method to release Camera
      */
     @Override
     public void releaseCamera() {
+        LOG.d("Release Camera");
+
+        if (mOrientationEventListener != null)
+            mOrientationEventListener.disable();
+
         if (mCamera != null) {
-            LOG.d("Release Camera");
             // Call stopPreview() to stop updating the preview surface.
 //            mCamera.stopPreview();
             // Important: Call release() to release the camera for use by other
@@ -789,6 +892,11 @@ public class CameraPreview extends AutoFitTextureView{
     public void finishCamera() {
         super.finishCamera();
 
+        if (mOrientationEventListener != null) {
+            mOrientationEventListener.disable();
+            mOrientationEventListener = null;
+        }
+
         if (mCamera != null) {
             mCamera.release();
             mCamera = null;
@@ -798,6 +906,7 @@ public class CameraPreview extends AutoFitTextureView{
     }
 
     private Bitmap rotateImage(Bitmap bitmap, int degrees) {
+        if (bitmap == null) return bitmap;
         if (degrees % 360 == 0)
             return bitmap;
 

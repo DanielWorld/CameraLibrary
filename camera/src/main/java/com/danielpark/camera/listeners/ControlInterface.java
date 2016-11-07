@@ -42,7 +42,7 @@ public interface ControlInterface {
 
     /**
      * Enable or disable Orientation event listener <br>
-     *     if it is <b>true</b> then, it is applied to taken picture
+     *     if it is <b>true</b> then, it is applied to taken picture. so, Make sure to set ORIENTATION
      * @param isEnabled
      */
     void setOrientationEventListener(boolean isEnabled);
