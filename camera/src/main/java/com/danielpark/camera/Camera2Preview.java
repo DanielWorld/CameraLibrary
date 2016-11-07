@@ -1017,7 +1017,7 @@ public class Camera2Preview extends AutoFitTextureView {
                 mCameraCaptureSession.stopRepeating();
                 mCameraCaptureSession.capture(captureBuilder.build(), CaptureCallback, null);
             }
-        } catch (CameraAccessException e){
+        } catch (CameraAccessException | IllegalStateException e){
             e.printStackTrace();
         }
     }
