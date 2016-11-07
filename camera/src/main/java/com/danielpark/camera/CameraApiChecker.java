@@ -82,12 +82,12 @@ public class CameraApiChecker {
                 break;
         }
 
-        if (checkCamera2BackLensSupport(context)) {
-            return new Camera2Preview(context);
-        } else {
+//        if (checkCamera2BackLensSupport(context)) {
+//            return new Camera2Preview(context);
+//        } else {
             checkCamera1BackLensSupport();
             return new CameraPreview(context);
-        }
+//        }
     }
 
     /** Check if this device has a camera */

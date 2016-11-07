@@ -5,7 +5,6 @@ import android.content.Context;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.BitmapRegionDecoder;
 import android.graphics.Matrix;
 import android.graphics.Point;
 import android.graphics.PointF;
@@ -15,7 +14,6 @@ import android.hardware.Camera;
 import android.hardware.SensorManager;
 import android.os.Environment;
 import android.util.Log;
-import android.util.SizeF;
 import android.util.SparseIntArray;
 import android.view.OrientationEventListener;
 import android.view.Surface;
@@ -49,6 +47,10 @@ public class CameraPreview extends AutoFitTextureView{
     private Camera.Size mPreviewSize;
     private Camera.Size mPictureSize;
     private int mSensorOrientation;
+    /** the lastest view scale */
+    private PointF mLatestViewScale = new PointF();
+    /** the lastest view size */
+    private PointF mLatestViewSize = new PointF();
 
     /** Orientation event flag */
     private boolean isOrientationEventAvailable = false;
@@ -465,20 +467,37 @@ public class CameraPreview extends AutoFitTextureView{
 
                         initializeTransformMargin();
 
-                        // if offset is positive then we don't need to add margin
-                        if (offset_x < 0) {
-                            mConfigureTransformMargin.left = offset_x;
-                            mConfigureTransformMargin.right = offset_x;
-                        }
-                        if (offset_y < 0) {
-                            mConfigureTransformMargin.top = offset_y;
-                            mConfigureTransformMargin.bottom = offset_y;
-                        }
-
                         bufferRect.offset(offset_x, offset_y);
                         matrix.setRectToRect(viewRect, bufferRect, Matrix.ScaleToFit.FILL);
                         // No need to rotate view, because unlike Camear2 API,
                         // Camera 1 API has setDisplayOrientation();
+
+                        // Daniel (2016-11-07 21:59:28): get Scale to fit view size (container) not screen!!!
+                        float scale = Math.max(
+                                (float) viewWidth / mPreviewSize.height,
+                                (float) viewHeight / mPreviewSize.width
+                        );
+                        // Daniel (2016-11-07 23:08:02): save the latest view scale
+                        mLatestViewScale.set(scale, scale);
+                        LOG.d("scale : " + scale);
+                        matrix.postScale(scale, scale, centerX, centerY);
+
+                        // Daniel (2016-11-07 22:36:43): Calculate margin to crop Image
+                        float currentExpectedWidthSize = bufferRect.width() * scale;
+                        float currentExpectedHeightSize = bufferRect.height() * scale;
+
+                        // Daniel (2016-11-08 00:38:08): save the latest view size
+                        mLatestViewSize.set(currentExpectedWidthSize, currentExpectedHeightSize);
+
+                        LOG.d("currentVisibleWidth : " + currentExpectedWidthSize);
+                        LOG.d("x_margin : " + (currentExpectedWidthSize - viewWidth));
+                        mConfigureTransformMargin.left = (currentExpectedWidthSize - viewWidth) / 2;
+                        mConfigureTransformMargin.right = (currentExpectedWidthSize - viewWidth) / 2;
+
+                        LOG.d("currentVisibleHeight : " + currentExpectedHeightSize);
+                        LOG.d("y_margin : " + (currentExpectedHeightSize - viewHeight));
+                        mConfigureTransformMargin.top = (currentExpectedHeightSize - viewHeight) / 2;
+                        mConfigureTransformMargin.bottom = (currentExpectedHeightSize - viewHeight) / 2;
                         break;
                     }
                     // TODO : Test needed
@@ -921,14 +940,37 @@ public class CameraPreview extends AutoFitTextureView{
         return rotatedBitmap;
     }
 
+    // TODO: It has to be tested!
     private Bitmap cropImage(Bitmap bitmap) {
-        if (mConfigureTransformMargin == null || bitmap == null) return bitmap;
+        if (mConfigureTransformMargin == null || bitmap == null
+                || mLatestViewScale.x == 0.0f) return bitmap;
         if (mConfigureTransformMargin.left == 0 && mConfigureTransformMargin.top == 0 && mConfigureTransformMargin.right == 0 && mConfigureTransformMargin.bottom == 0) return bitmap;
 
+        final float preViewRatioX, preViewRatioY;
+
+        final float viewScale = mLatestViewScale.x;
+        LOG.d("View scale : " + viewScale);
         LOG.d("mConfigureMargin : " + mConfigureTransformMargin.toString());
         LOG.d("Bitmap size : " + bitmap.getWidth() + " , " + bitmap.getHeight());
-        Bitmap rotatedBitmap = Bitmap.createBitmap(bitmap, (int) Math.abs(mConfigureTransformMargin.left), (int) Math.abs(mConfigureTransformMargin.top),
-                (int) (bitmap.getWidth() - Math.abs(mConfigureTransformMargin.right * 2)), (int) (bitmap.getHeight() - Math.abs(mConfigureTransformMargin.bottom * 2)));
+
+        if ((bitmap.getWidth() <= bitmap.getHeight() && mLatestViewSize.x <= mLatestViewSize.y)
+                ||
+                (bitmap.getWidth() >= bitmap.getHeight() && mLatestViewSize.x >= mLatestViewSize.y)
+                ) {
+            // Same direction
+            preViewRatioX = bitmap.getWidth() / mLatestViewSize.x;
+            preViewRatioY = bitmap.getHeight() / mLatestViewSize.y;
+        } else {
+            // Different direction
+            preViewRatioX = bitmap.getWidth() / mLatestViewSize.y;
+            preViewRatioY = bitmap.getHeight() / mLatestViewSize.x;
+        }
+        LOG.d("previewRatio X : " + preViewRatioX);
+        LOG.d("previewRatio Y : " + preViewRatioY);
+        Bitmap rotatedBitmap = Bitmap.createBitmap(bitmap, (int) Math.abs(mConfigureTransformMargin.left / viewScale * preViewRatioX), (int) Math.abs(mConfigureTransformMargin.top / viewScale * preViewRatioY),
+                (int) (bitmap.getWidth() - Math.abs(mConfigureTransformMargin.right / viewScale * preViewRatioX * 2)), (int) (bitmap.getHeight() - Math.abs(mConfigureTransformMargin.bottom / viewScale * preViewRatioY * 2)));
+        LOG.d("Cropped size : " + rotatedBitmap.getWidth() + " , " + rotatedBitmap.getHeight());
+
         // TODO: Check if it is okay to recycle!!
         if (bitmap != null && bitmap != rotatedBitmap && !bitmap.isRecycled())
             bitmap.recycle();
