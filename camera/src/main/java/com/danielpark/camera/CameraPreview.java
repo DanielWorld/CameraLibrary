@@ -332,6 +332,7 @@ public class CameraPreview extends AutoFitTextureView{
 
             if (isCorrectRatioOrientation()) {
                 switch (rotation) {
+                    // Daniel (2016-11-08 11:45:11): TODO: TEST
                     case Surface.ROTATION_0: {
                         if (mConfigureTransformMargin == null) mConfigureTransformMargin = new RectF();
                         final float offset_x = (centerX - bufferRect.centerX());
