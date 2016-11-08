@@ -47,8 +47,6 @@ public class CameraPreview extends AutoFitTextureView{
     private Camera.Size mPreviewSize;
     private Camera.Size mPictureSize;
     private int mSensorOrientation;
-    /** the lastest view scale */
-    private PointF mLatestViewScale = new PointF();
     /** the lastest view size */
     private PointF mLatestViewSize = new PointF();
 
@@ -334,120 +332,16 @@ public class CameraPreview extends AutoFitTextureView{
 
             if (isCorrectOrientation()) {
                 switch (rotation) {
-                    // TODO: Test needed
                     case Surface.ROTATION_0: {
-                        if (mConfigureTransformMargin == null) mConfigureTransformMargin = new RectF();
-                        final float offset_x = (centerX - bufferRect.centerX());
-                        final float offset_y = (centerY - bufferRect.centerY());
-
-                        LOG.d("offset x  : " + offset_x);
-                        LOG.d("offset y : " + offset_y);
-
-                        initializeTransformMargin();
-
-                        // if offset is positive then we don't need to add margin
-                        if (offset_x < 0) {
-                            mConfigureTransformMargin.left = offset_x;
-                            mConfigureTransformMargin.right = offset_x;
-                        }
-                        if (offset_y < 0) {
-                            mConfigureTransformMargin.top = offset_y;
-                            mConfigureTransformMargin.bottom = offset_y;
-                        }
-
-                        bufferRect.offset(offset_x, offset_y);
-                        matrix.setRectToRect(viewRect, bufferRect, Matrix.ScaleToFit.FILL);
                         break;
                     }
-                    // Daniel (2016-11-05 13:37:19): Test Proved!
                     case Surface.ROTATION_90: {
-                        // Daniel (2016-08-26 17:34:05): Reverse dst size
-                        bufferRect = new RectF(0, 0, mPreviewSize.height, mPreviewSize.width);
-
-                        if (mConfigureTransformMargin == null) mConfigureTransformMargin = new RectF();
-                        final float offset_x = (centerX - bufferRect.centerX());
-                        final float offset_y = (centerY - bufferRect.centerY());
-
-                        LOG.d("offset x  : " + offset_x);
-                        LOG.d("offset y : " + offset_y);
-
-                        initializeTransformMargin();
-
-                        // if offset is positive then we don't need to add margin
-                        // TODO: device rotation is 90, which means X, Y coordinates should be converted to each other.
-                        if (centerX - bufferRect.centerY() < 0) {
-                            mConfigureTransformMargin.left = centerX - bufferRect.centerY();
-                            mConfigureTransformMargin.right = centerX - bufferRect.centerY();
-                        }
-                        if (centerY - bufferRect.centerX() < 0) {
-                            mConfigureTransformMargin.top = centerY - bufferRect.centerX();
-                            mConfigureTransformMargin.bottom = centerY - bufferRect.centerX();
-                        }
-
-                        bufferRect.offset(offset_x, offset_y);
-                        matrix.setRectToRect(viewRect, bufferRect, Matrix.ScaleToFit.FILL);
-                        matrix.postRotate(-90, centerX, centerY);
                         break;
                     }
-                    // TODO: Test needed
                     case Surface.ROTATION_180: {
-                        if (mConfigureTransformMargin == null) mConfigureTransformMargin = new RectF();
-                        final float offset_x = (centerX - bufferRect.centerX());
-                        final float offset_y = (centerY - bufferRect.centerY());
-
-                        LOG.d("offset x  : " + offset_x);
-                        LOG.d("offset y : " + offset_y);
-
-                        initializeTransformMargin();
-
-                        // if offset is positive then we don't need to add margin
-                        if (offset_x < 0) {
-                            mConfigureTransformMargin.left = offset_x;
-                            mConfigureTransformMargin.right = offset_x;
-                        }
-                        if (offset_y < 0) {
-                            mConfigureTransformMargin.top = offset_y;
-                            mConfigureTransformMargin.bottom = offset_y;
-                        }
-
-                        bufferRect.offset(offset_x, offset_y);
-                        matrix.setRectToRect(viewRect, bufferRect, Matrix.ScaleToFit.FILL);
-                        matrix.postRotate(-180, centerX, centerY);
                         break;
                     }
-                    // Daniel (2016-11-05 13:30:30): Test Proved!
                     case Surface.ROTATION_270: {
-                        // Daniel (2016-08-26 17:34:05): Reverse dst size
-                        bufferRect = new RectF(0, 0, mPreviewSize.height, mPreviewSize.width);
-
-                        if (mConfigureTransformMargin == null) mConfigureTransformMargin = new RectF();
-                        final float offset_x = (centerX - bufferRect.centerX());
-                        final float offset_y = (centerY - bufferRect.centerY());
-
-                        LOG.d("offset x  : " + offset_x);
-                        LOG.d("offset y : " + offset_y);
-
-                        initializeTransformMargin();
-
-                        // if offset is positive then we don't need to add margin
-                        // TODO: device rotation is 270, which means X, Y coordinates should be converted to each other.
-                        if (centerX - bufferRect.centerY() < 0) {
-                            mConfigureTransformMargin.left = centerX - bufferRect.centerY();
-                            mConfigureTransformMargin.right = centerX - bufferRect.centerY();
-                        }
-                        if (centerY - bufferRect.centerX() < 0) {
-                            mConfigureTransformMargin.top = centerY - bufferRect.centerX();
-                            mConfigureTransformMargin.bottom = centerY - bufferRect.centerX();
-                        }
-
-                        bufferRect.offset(offset_x, offset_y);
-                        matrix.setRectToRect(viewRect, bufferRect, Matrix.ScaleToFit.FILL);
-//                        float scale = Math.max(
-//                                (float) viewHeight / mPreviewSize.height,
-//                                (float) viewWidth / mPreviewSize.width);
-//                        LOG.d("scale : " + scale);
-//                      matrix.postScale(scale, scale, centerX, centerY);
-                        matrix.postRotate(-270, centerX, centerY);
                         break;
                     }
                 }
@@ -477,8 +371,6 @@ public class CameraPreview extends AutoFitTextureView{
                                 (float) viewWidth / mPreviewSize.height,
                                 (float) viewHeight / mPreviewSize.width
                         );
-                        // Daniel (2016-11-07 23:08:02): save the latest view scale
-                        mLatestViewScale.set(scale, scale);
                         LOG.d("scale : " + scale);
                         matrix.postScale(scale, scale, centerX, centerY);
 
@@ -940,36 +832,28 @@ public class CameraPreview extends AutoFitTextureView{
         return rotatedBitmap;
     }
 
-    // TODO: It has to be tested!
     private Bitmap cropImage(Bitmap bitmap) {
-        if (mConfigureTransformMargin == null || bitmap == null
-                || mLatestViewScale.x == 0.0f) return bitmap;
+        if (mConfigureTransformMargin == null || bitmap == null || mLatestViewSize.x == 0 || mLatestViewSize.y == 0) return bitmap;
         if (mConfigureTransformMargin.left == 0 && mConfigureTransformMargin.top == 0 && mConfigureTransformMargin.right == 0 && mConfigureTransformMargin.bottom == 0) return bitmap;
 
-        final float preViewRatioX, preViewRatioY;
-
-        final float viewScale = mLatestViewScale.x;
-        LOG.d("View scale : " + viewScale);
-        LOG.d("mConfigureMargin : " + mConfigureTransformMargin.toString());
-        LOG.d("Bitmap size : " + bitmap.getWidth() + " , " + bitmap.getHeight());
+        Bitmap rotatedBitmap = null;
 
         if ((bitmap.getWidth() <= bitmap.getHeight() && mLatestViewSize.x <= mLatestViewSize.y)
-                ||
-                (bitmap.getWidth() >= bitmap.getHeight() && mLatestViewSize.x >= mLatestViewSize.y)
-                ) {
-            // Same direction
-            preViewRatioX = bitmap.getWidth() / mLatestViewSize.x;
-            preViewRatioY = bitmap.getHeight() / mLatestViewSize.y;
+                || (bitmap.getWidth() >= bitmap.getHeight() && mLatestViewSize.x >= mLatestViewSize.y)) {
+            final float xRatio = bitmap.getWidth() / mLatestViewSize.x;
+            final float yRatio = bitmap.getHeight() / mLatestViewSize.y;
+
+            rotatedBitmap = Bitmap.createBitmap(bitmap, (int) Math.abs(mConfigureTransformMargin.left * xRatio), (int) Math.abs(mConfigureTransformMargin.top * yRatio),
+                    (int) (bitmap.getWidth() - Math.abs(mConfigureTransformMargin.right * xRatio * 2)), (int) (bitmap.getHeight() - Math.abs(mConfigureTransformMargin.bottom * yRatio * 2)));
+            LOG.d("Cropped size : " + rotatedBitmap.getWidth() + " , " + rotatedBitmap.getHeight());
         } else {
-            // Different direction
-            preViewRatioX = bitmap.getWidth() / mLatestViewSize.y;
-            preViewRatioY = bitmap.getHeight() / mLatestViewSize.x;
+            final float xRatio = bitmap.getWidth() / mLatestViewSize.y;
+            final float yRatio = bitmap.getHeight() / mLatestViewSize.x;
+
+            rotatedBitmap = Bitmap.createBitmap(bitmap, (int) Math.abs(mConfigureTransformMargin.bottom * xRatio), (int) Math.abs(mConfigureTransformMargin.left * yRatio),
+                    (int) (bitmap.getWidth() - Math.abs(mConfigureTransformMargin.top * xRatio * 2)), (int) (bitmap.getHeight() - Math.abs(mConfigureTransformMargin.right * yRatio * 2)));
+            LOG.d("Cropped size : " + rotatedBitmap.getWidth() + " , " + rotatedBitmap.getHeight());
         }
-        LOG.d("previewRatio X : " + preViewRatioX);
-        LOG.d("previewRatio Y : " + preViewRatioY);
-        Bitmap rotatedBitmap = Bitmap.createBitmap(bitmap, (int) Math.abs(mConfigureTransformMargin.left / viewScale * preViewRatioX), (int) Math.abs(mConfigureTransformMargin.top / viewScale * preViewRatioY),
-                (int) (bitmap.getWidth() - Math.abs(mConfigureTransformMargin.right / viewScale * preViewRatioX * 2)), (int) (bitmap.getHeight() - Math.abs(mConfigureTransformMargin.bottom / viewScale * preViewRatioY * 2)));
-        LOG.d("Cropped size : " + rotatedBitmap.getWidth() + " , " + rotatedBitmap.getHeight());
 
         // TODO: Check if it is okay to recycle!!
         if (bitmap != null && bitmap != rotatedBitmap && !bitmap.isRecycled())
