@@ -81,12 +81,22 @@ public class CameraPreview extends AutoFitTextureView{
 
         @Override
         public void onSurfaceTextureAvailable(SurfaceTexture surfaceTexture, int width, int height) {
-            openCamera(surfaceTexture, width, height);
+            try {
+                openCamera(surfaceTexture, width, height);
+            } catch (RuntimeException e){
+                // Daniel (2016-11-09 23:59:52): It might camera already release
+                e.printStackTrace();
+            }
         }
 
         @Override
         public void onSurfaceTextureSizeChanged(SurfaceTexture surfaceTexture, int width, int height) {
-            configureTransform(surfaceTexture, width, height);
+            try {
+                configureTransform(surfaceTexture, width, height);
+            } catch (RuntimeException e){
+                // Daniel (2016-11-09 23:59:52): It might camera already release
+                e.printStackTrace();
+            }
         }
 
         @Override
@@ -114,8 +124,12 @@ public class CameraPreview extends AutoFitTextureView{
         if (mCamera == null)
             mCamera = Camera.open();
 
-        setUpCameraOutput(width, height);
-        configureTransform(surfaceTexture, width, height);
+        try {
+            setUpCameraOutput(width, height);
+            configureTransform(surfaceTexture, width, height);
+        } catch (RuntimeException e){
+            e.printStackTrace();
+        }
     }
 
     /**
@@ -161,7 +175,7 @@ public class CameraPreview extends AutoFitTextureView{
      * @param width  The width of available size for camera preview
      * @param height The height of available size for camera preview
      */
-    private void setUpCameraOutput(int width, int height) {
+    private void setUpCameraOutput(int width, int height) throws RuntimeException {
         LOG.d("setupCameraOutput() : " + width + " , " + height);
 
         // 1. Get the largest supported preview size
@@ -259,6 +273,7 @@ public class CameraPreview extends AutoFitTextureView{
         // Daniel (2016-11-09 15:52:55): try to disable shutter sound
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
             if (cameraInfo.canDisableShutterSound) {
+                LOG.d("Disable shutter sound");
                 mCamera.enableShutterSound(false);
                 return;
             }
@@ -300,7 +315,7 @@ public class CameraPreview extends AutoFitTextureView{
      * @param viewWidth  The width of `mTextureView`
      * @param viewHeight The height of `mTextureView`
      */
-    private void configureTransform(SurfaceTexture surfaceTexture, int viewWidth, int viewHeight) {
+    private void configureTransform(SurfaceTexture surfaceTexture, int viewWidth, int viewHeight) throws RuntimeException {
         if (null == mPreviewSize)
             return;
 
@@ -857,13 +872,7 @@ public class CameraPreview extends AutoFitTextureView{
         LOG.d("captureDeprecatePicture()");
 
         try {
-            if (mPreviewFrame != null || mPreviewFrame.length > 0) {
-                try {
-                    if (mCamera != null) mCamera.stopPreview();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-
+            if (mPreviewFrame != null && mPreviewFrame.length > 0) {
                 int format = mCamera.getParameters().getPreviewFormat();
                 YuvImage yuvImage = new YuvImage(mPreviewFrame, format, mPreviewSize.width, mPreviewSize.height, null);
                 ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
@@ -875,6 +884,10 @@ public class CameraPreview extends AutoFitTextureView{
                 options.inInputShareable = true;
 
                 Bitmap bitmap = BitmapFactory.decodeByteArray(byteArrayOutputStream.toByteArray(), 0, byteArrayOutputStream.size(), options);
+
+                byteArrayOutputStream.flush();
+                byteArrayOutputStream.close();
+
 //                Bitmap bitmap = BitmapFactory.decodeByteArray(mPreviewFrame, 0, mPreviewFrame.length);
 
                 // Daniel (2016-08-26 14:01:20): Current Device rotation
@@ -937,15 +950,6 @@ public class CameraPreview extends AutoFitTextureView{
             }
         } catch (Exception e){
             captureStillPicture();
-        }
-
-        try {
-            if (mCamera != null) {
-                mCamera.stopPreview();
-                mCamera.startPreview();
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
         }
     }
 
