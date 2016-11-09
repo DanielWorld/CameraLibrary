@@ -852,6 +852,7 @@ public class CameraPreview extends AutoFitTextureView{
     /**
      * Try to capture a still image from preview
      */
+    @Deprecated
     private void captureDeprecatePicture() {
         LOG.d("captureDeprecatePicture()");
 
@@ -866,7 +867,7 @@ public class CameraPreview extends AutoFitTextureView{
                 int format = mCamera.getParameters().getPreviewFormat();
                 YuvImage yuvImage = new YuvImage(mPreviewFrame, format, mPreviewSize.width, mPreviewSize.height, null);
                 ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-                Rect rect = new Rect(0, 0, mPictureSize.width, mPictureSize.height);
+                Rect rect = new Rect(0, 0, mPreviewSize.width, mPreviewSize.height);
                 yuvImage.compressToJpeg(rect, 95, byteArrayOutputStream);
 
                 BitmapFactory.Options options = new BitmapFactory.Options();
@@ -930,21 +931,21 @@ public class CameraPreview extends AutoFitTextureView{
 
                     if (onTakePictureListener != null && pictureFile != null)
                         onTakePictureListener.onTakePicture(pictureFile);
-
-                    try {
-                        if (mCamera != null) {
-                            mCamera.stopPreview();
-                            mCamera.startPreview();
-                        }
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
                 }
             } else {
                 captureStillPicture();
             }
         } catch (Exception e){
             captureStillPicture();
+        }
+
+        try {
+            if (mCamera != null) {
+                mCamera.stopPreview();
+                mCamera.startPreview();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
