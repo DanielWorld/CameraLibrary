@@ -694,15 +694,23 @@ public class CameraPreview extends AutoFitTextureView{
     public void autoFocus() {
         super.autoFocus();
         if (mCamera != null) {
-            mCamera.autoFocus(new Camera.AutoFocusCallback() {
-                @Override
-                public void onAutoFocus(boolean success, Camera camera) {
-                    LOG.d("onAutoFocus() : " + success);
+            try {
+                mCamera.autoFocus(new Camera.AutoFocusCallback() {
+                    @Override
+                    public void onAutoFocus(boolean success, Camera camera) {
+                        LOG.d("onAutoFocus() : " + success);
 
-                    if (onTakePictureListener != null)
-                        onTakePictureListener.onLensFocused(success);
-                }
-            });
+                        if (onTakePictureListener != null)
+                            onTakePictureListener.onLensFocused(success);
+                    }
+                });
+            } catch (RuntimeException e){
+                e.printStackTrace();
+                // Daniel (2016-11-10 00:53:01): Usually, it happens on some freak devices
+                // return auto focus succeed result
+                if (onTakePictureListener != null)
+                    onTakePictureListener.onLensFocused(true);
+            }
         }
     }
 
@@ -991,7 +999,7 @@ public class CameraPreview extends AutoFitTextureView{
                 mCamera.setParameters(params);
                 mCamera.startPreview();
             } catch (RuntimeException e) {
-                return;
+                e.printStackTrace();
             }
         }
     }
