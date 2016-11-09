@@ -8,10 +8,13 @@ import android.graphics.BitmapFactory;
 import android.graphics.Matrix;
 import android.graphics.Point;
 import android.graphics.PointF;
+import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.SurfaceTexture;
+import android.graphics.YuvImage;
 import android.hardware.Camera;
 import android.hardware.SensorManager;
+import android.os.Build;
 import android.os.Environment;
 import android.util.Log;
 import android.util.SparseIntArray;
@@ -24,6 +27,7 @@ import com.danielpark.camera.listeners.OnTakePictureListener;
 import com.danielpark.camera.util.AutoFitTextureView;
 import com.danielpark.camera.util.DeviceUtil;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -252,20 +256,24 @@ public class CameraPreview extends AutoFitTextureView{
 //                    mPreviewSize.width, mPreviewSize.height);
         }
 
-//        int screenWidth = DeviceUtil.getResolutionWidth(getContext());
-//        int screenHeight = DeviceUtil.getResolutionHeight(getContext());
-//
-//        if ((screenWidth > screenHeight && mPreviewSize.width > mPreviewSize.height)
-//                || (screenWidth < screenHeight && mPreviewSize.width < mPreviewSize.height)) {
-//            setAspectRatio(mPictureSize.width, mPreviewSize.height);
-//        } else {
-//            setAspectRatio(mPictureSize.height, mPreviewSize.width);
-//        }
+        // Daniel (2016-11-09 15:52:55): try to disable shutter sound
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+            if (cameraInfo.canDisableShutterSound) {
+                mCamera.enableShutterSound(false);
+                return;
+            }
+        }
 
-//        int width1 = MeasureSpec.getSize(getMeasuredWidth());
-//        int height1 = MeasureSpec.getSize(getMeasuredHeight());
-//        LOG.d("mesured size : " + width1 + " , " + height1);
+        // Daniel (2016-11-09 15:55:29): Device can't disable shutter sound
+        mCamera.setPreviewCallback(new Camera.PreviewCallback() {
+            @Override
+            public void onPreviewFrame(byte[] data, Camera camera) {
+                mPreviewFrame = data;
+            }
+        });
     }
+
+    private byte[] mPreviewFrame;
 
     /**
      * Save offset of preview size to take picture with correct aspect ratio
@@ -740,13 +748,24 @@ public class CameraPreview extends AutoFitTextureView{
         super.takePicture();
 
         // Daniel (2016-11-03 16:12:52): Start taking picture
-        captureStillPicture();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+            Camera.CameraInfo cameraInfo = new Camera.CameraInfo();
+            Camera.getCameraInfo(Camera.CameraInfo.CAMERA_FACING_BACK, cameraInfo);
+            if (cameraInfo.canDisableShutterSound) {
+                captureStillPicture();
+                return;
+            }
+        }
+
+        captureDeprecatePicture();
     }
 
     /**
      * Try to capture a still image from preview
      */
     private void captureStillPicture() {
+        LOG.d("captureStillPicture()");
+
         try {
             if (mCamera != null)
                 mCamera.takePicture(null, null, new Camera.PictureCallback() {
@@ -827,6 +846,105 @@ public class CameraPreview extends AutoFitTextureView{
                 });
         } catch (Exception e){
             e.printStackTrace();
+        }
+    }
+
+    /**
+     * Try to capture a still image from preview
+     */
+    private void captureDeprecatePicture() {
+        LOG.d("captureDeprecatePicture()");
+
+        try {
+            if (mPreviewFrame != null || mPreviewFrame.length > 0) {
+                try {
+                    if (mCamera != null) mCamera.stopPreview();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
+                int format = mCamera.getParameters().getPreviewFormat();
+                YuvImage yuvImage = new YuvImage(mPreviewFrame, format, mPreviewSize.width, mPreviewSize.height, null);
+                ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+                Rect rect = new Rect(0, 0, mPictureSize.width, mPictureSize.height);
+                yuvImage.compressToJpeg(rect, 95, byteArrayOutputStream);
+
+                BitmapFactory.Options options = new BitmapFactory.Options();
+                options.inPurgeable = true;
+                options.inInputShareable = true;
+
+                Bitmap bitmap = BitmapFactory.decodeByteArray(byteArrayOutputStream.toByteArray(), 0, byteArrayOutputStream.size(), options);
+//                Bitmap bitmap = BitmapFactory.decodeByteArray(mPreviewFrame, 0, mPreviewFrame.length);
+
+                // Daniel (2016-08-26 14:01:20): Current Device rotation
+                WindowManager windowManager = (WindowManager) getContext().getSystemService(Context.WINDOW_SERVICE);
+                int displayRotation = windowManager.getDefaultDisplay().getRotation();
+                LOG.d("Current device rotation : " + ORIENTATIONS.get(displayRotation));
+
+                int result = (mSensorOrientation - ORIENTATIONS.get(displayRotation) + 360) % 360;
+
+                Bitmap rotatedBitmap = null;
+
+                if (result % 360 != 0) {
+                    rotatedBitmap = rotateImage(bitmap, result);
+                    rotatedBitmap = cropImage(rotatedBitmap);
+                } else {
+                    rotatedBitmap = cropImage(bitmap);
+                }
+
+                if (getLastOrientation(mLastOrientation) % 360 != 0)
+                    rotatedBitmap = rotateImage(rotatedBitmap, getLastOrientation(mLastOrientation));
+
+                File pictureFile = getOutputMediaFile();
+                if (pictureFile == null) {
+                    return;
+                }
+                try {
+                    FileOutputStream fos = new FileOutputStream(pictureFile);
+
+                    if (rotatedBitmap != null)
+                        rotatedBitmap.compress(Bitmap.CompressFormat.JPEG, 95, fos);
+                    else
+                        bitmap.compress(Bitmap.CompressFormat.JPEG, 95, fos);
+
+                    fos.close();
+                } catch (FileNotFoundException e) {
+                    e.printStackTrace();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                } finally {
+                    LOG.d("File path : " + pictureFile.getAbsolutePath());
+
+                    try {
+                        // TODO: recycle Bitmap!!!
+                        if (rotatedBitmap != null) {
+                            rotatedBitmap.recycle();
+                            rotatedBitmap = null;
+                        } else {
+                            bitmap.recycle();
+                            bitmap = null;
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+
+                    if (onTakePictureListener != null && pictureFile != null)
+                        onTakePictureListener.onTakePicture(pictureFile);
+
+                    try {
+                        if (mCamera != null) {
+                            mCamera.stopPreview();
+                            mCamera.startPreview();
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            } else {
+                captureStillPicture();
+            }
+        } catch (Exception e){
+            captureStillPicture();
         }
     }
 
@@ -920,6 +1038,8 @@ public class CameraPreview extends AutoFitTextureView{
             mOrientationEventListener.disable();
 
         if (mCamera != null) {
+            mCamera.setPreviewCallback(null);
+
             // Call stopPreview() to stop updating the preview surface.
 //            mCamera.stopPreview();
             // Important: Call release() to release the camera for use by other
