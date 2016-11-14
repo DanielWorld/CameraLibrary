@@ -202,14 +202,16 @@ public class CameraApiChecker {
      * Check if the device supports back facing lens in Camera
      */
     private void checkCamera1BackLensSupport() {
-        Camera camera = Camera.open();
-
-        if (camera == null) {
-            throw new UnsupportedOperationException("No Camera1 Back facing Lens!");
-        } else {
-            camera.release();
-            camera = null;
-        }
+        // http://stackoverflow.com/questions/26305107/how-to-fix-fail-to-connect-to-camera-service-exception-in-android-emulator
+        // Daniel (2016-11-14 10:57:35): For now, it is useless
+//        Camera camera = Camera.open();
+//
+//        if (camera == null) {
+//            throw new UnsupportedOperationException("No Camera1 Back facing Lens!");
+//        } else {
+//            camera.release();
+//            camera = null;
+//        }
     }
 
     /**
