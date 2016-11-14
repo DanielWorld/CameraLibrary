@@ -255,6 +255,13 @@ public class CameraPreview extends AutoFitTextureView{
         mPictureSize = chooseOptimalSize(mCamera.getParameters().getSupportedPictureSizes(),
                 largestPreviewSize.width, largestPreviewSize.height, largestPreviewSize.width, largestPreviewSize.height,
                 largestPreviewSize);
+
+        // Daniel (2016-11-14 15:13:09): OKAY, but if mPictureSize is too bigger than mPreviewSize, e.g) multiple by 2
+        if ((float) (mPictureSize.width * mPictureSize.height) > (float) (mPreviewSize.width * mPreviewSize.height) * 2) {
+            mPictureSize = chooseOptimalSize(mCamera.getParameters().getSupportedPictureSizes(),
+                    largestPreviewSize.width, largestPreviewSize.height, largestPreviewSize.width, largestPreviewSize.height);
+        }
+
         // Daniel (2016-11-04 12:18:33): Picture size should be equal or better than the largest preview size
         LOG.d("8. Optimal Picture size : " + mPictureSize.width + " , " + mPictureSize.height);
 
@@ -641,6 +648,36 @@ public class CameraPreview extends AutoFitTextureView{
         txform.postTranslate(xoff, yoff);
         setTransform(txform);
     }
+
+	private static Camera.Size chooseOptimalSize(List<Camera.Size> choices, int textureViewWidth,
+												 int textureViewHeight, int maxWidth, int maxHeight) {
+		// Collect the supported resolutions that are at least as big as the preview Surface
+		List<Camera.Size> bigEnough = new ArrayList<>();
+		// Collect the supported resolutions that are smaller than the preview Surface
+		List<Camera.Size> notBigEnough = new ArrayList<>();
+//		int w = aspectRatio.width;
+//		int h = aspectRatio.height;
+		for (Camera.Size option : choices) {
+			if (option.width <= maxWidth && option.height <= maxHeight) {
+				if (option.width >= textureViewWidth &&
+						option.height >= textureViewHeight) {
+					bigEnough.add(option);
+				} else {
+					notBigEnough.add(option);
+				}
+			}
+		}
+
+		// Pick the smallest of those big enough. If there is no one big enough, pick the
+		// largest of those not big enough.
+		if (bigEnough.size() > 0) {
+			return Collections.min(bigEnough, new CompareSizesByArea());
+		} else if (notBigEnough.size() > 0) {
+			return Collections.max(notBigEnough, new CompareSizesByArea());
+		} else {
+			return choices.get(0);
+		}
+	}
 
     /**
      * Given {@code choices} of {@code Size}s supported by a camera, choose the smallest one that
