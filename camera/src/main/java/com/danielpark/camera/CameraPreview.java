@@ -1072,12 +1072,13 @@ public class CameraPreview extends AutoFitTextureView{
             mOrientationEventListener = null;
         }
 
+		onTakePictureListener = null;
+
         if (mCamera != null) {
+			mCamera.setPreviewCallback(null);
             mCamera.release();
             mCamera = null;
         }
-
-        onTakePictureListener = null;
     }
 
     private Bitmap rotateImage(Bitmap bitmap, int degrees) {
