@@ -744,9 +744,9 @@ public class CameraPreview extends AutoFitTextureView{
             } catch (RuntimeException e){
                 e.printStackTrace();
                 // Daniel (2016-11-10 00:53:01): Usually, it happens on some freak devices
-                // return auto focus succeed result
+                // return auto focus failure result
                 if (onTakePictureListener != null)
-                    onTakePictureListener.onLensFocused(true);
+                    onTakePictureListener.onLensFocused(false);
             }
         }
     }
