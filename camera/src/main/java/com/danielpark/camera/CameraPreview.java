@@ -285,14 +285,6 @@ public class CameraPreview extends AutoFitTextureView{
                 return;
             }
         }
-
-        // Daniel (2016-11-09 15:55:29): Device can't disable shutter sound
-        mCamera.setPreviewCallback(new Camera.PreviewCallback() {
-            @Override
-            public void onPreviewFrame(byte[] data, Camera camera) {
-                mPreviewFrame = data;
-            }
-        });
     }
 
     private byte[] mPreviewFrame;
@@ -618,6 +610,15 @@ public class CameraPreview extends AutoFitTextureView{
 
             mCamera.setPreviewTexture(surfaceTexture);
             mCamera.startPreview();
+
+            // Daniel (2016-11-09 15:55:29): Device can't disable shutter sound
+            mCamera.setPreviewCallback(new Camera.PreviewCallback() {
+                @Override
+                public void onPreviewFrame(byte[] data, Camera camera) {
+//                    LOG.v("onPreviewFrame!");
+                    mPreviewFrame = data;
+                }
+            });
         } catch (Exception e){
             e.printStackTrace();
         }
@@ -999,10 +1000,10 @@ public class CameraPreview extends AutoFitTextureView{
     }
 
     @Override
-    public void flashTorch() {
-        super.flashTorch();
+    public void flashToggle() {
+        super.flashToggle();
 
-        LOG.d("flashTorch()");
+        LOG.d("flashToggle()");
 
         if (mCamera != null) {
             Camera.Parameters params = mCamera.getParameters();

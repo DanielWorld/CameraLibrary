@@ -32,7 +32,7 @@ public interface ControlInterface {
     /**
      * Whether turn off the flash or not
      */
-    void flashTorch();
+    void flashToggle();
 
     /**
      * Set listener to get taken picture file

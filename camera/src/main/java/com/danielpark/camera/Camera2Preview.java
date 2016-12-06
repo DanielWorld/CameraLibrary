@@ -1023,10 +1023,10 @@ public class Camera2Preview extends AutoFitTextureView {
     }
 
     @Override
-    public void flashTorch() {
-        super.flashTorch();
+    public void flashToggle() {
+        super.flashToggle();
 
-        LOG.d("flashTorch()");
+        LOG.d("flashToggle()");
 
         if (mCameraCharacteristics != null) {
             // Check if the flash is supported.

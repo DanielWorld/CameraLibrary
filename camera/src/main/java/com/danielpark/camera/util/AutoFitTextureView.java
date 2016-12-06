@@ -89,7 +89,7 @@ public class AutoFitTextureView extends TextureView implements ControlInterface{
 
     @CallSuper
     @Override
-    public void flashTorch() {
+    public void flashToggle() {
 
     }
 
