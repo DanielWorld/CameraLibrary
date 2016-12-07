@@ -817,7 +817,24 @@ public class CameraPreview extends AutoFitTextureView{
             }
         }
 
-        captureDeprecatePicture();
+        // Daniel (2016-12-07 10:56:34): Which means preview frame is invalid (No need to setPreviewCallback, so use setOneshotCallback method
+        if (mPreviewFrame == null || mPreviewFrame.length == 0) {
+            if (mCamera != null) {
+                mCamera.setOneShotPreviewCallback(new Camera.PreviewCallback() {
+                    @Override
+                    public void onPreviewFrame(byte[] data, Camera camera) {
+                        mPreviewFrame = data;
+                        captureDeprecatePicture();
+                    }
+                });
+            } else {
+                // Daniel (2016-12-07 11:11:34): mCamera is null which means, camera was already released
+                // (Activity or Fragment has been destroyed)
+            }
+        } else {
+            // Daniel (2016-12-07 11:00:47): if mPreviewFrame is valid then, use captureDeprecatePicture()
+            captureDeprecatePicture();
+        }
     }
 
     /**
@@ -989,6 +1006,9 @@ public class CameraPreview extends AutoFitTextureView{
 
                     if (onTakePictureListener != null && pictureFile != null)
                         onTakePictureListener.onTakePicture(pictureFile);
+
+                    // remove mPreviewFrame
+                    mPreviewFrame = null;
                 }
             } else {
                 captureStillPicture();
@@ -999,8 +1019,16 @@ public class CameraPreview extends AutoFitTextureView{
     }
 
     @Override
-    public void flashTorch() {
-        super.flashTorch();
+    public boolean supportFlash() {
+        if (mCamera != null && mCamera.getParameters() != null && mCamera.getParameters().getSupportedFlashModes() != null) {
+            return mCamera.getParameters().getSupportedFlashModes().contains(Camera.Parameters.FLASH_MODE_TORCH);
+        }
+        return false;
+    }
+
+    @Override
+    public void flashToggle() {
+        super.flashToggle();
 
         LOG.d("flashTorch()");
 

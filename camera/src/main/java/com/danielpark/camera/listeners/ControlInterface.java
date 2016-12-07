@@ -32,7 +32,13 @@ public interface ControlInterface {
     /**
      * Whether turn off the flash or not
      */
-    void flashTorch();
+    void flashToggle();
+
+    /**
+     * Check if the device supports flash or not
+     * @return
+     */
+    boolean supportFlash();
 
     /**
      * Set listener to get taken picture file
