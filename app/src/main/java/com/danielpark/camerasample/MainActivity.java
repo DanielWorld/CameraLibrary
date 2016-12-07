@@ -136,7 +136,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 cameraPreview.takePicture();
                 break;
             case R.id.flashBtn:
-                cameraPreview.flashToggle();
+                cameraPreview.flashTorch();
                 break;
             case R.id.settingBtn:
                 break;
