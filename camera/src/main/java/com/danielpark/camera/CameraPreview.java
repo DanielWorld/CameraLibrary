@@ -1200,23 +1200,35 @@ public class CameraPreview extends AutoFitTextureView{
         return rotatedBitmap;
     }
 
-    private static File getOutputMediaFile() {
-        File mediaStorageDir = new File(
-                Environment
-                        .getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES),
-                "CameraLibrary");
-        if (!mediaStorageDir.exists()) {
-            if (!mediaStorageDir.mkdirs()) {
-                Log.e("CameraLogger", "failed to create directory");
-                return null;
-            }
+    private File getOutputMediaFile() {
+//        File mediaStorageDir = new File(
+//                Environment
+//                        .getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES),
+//                "CameraLibrary");
+//        if (!mediaStorageDir.exists()) {
+//            if (!mediaStorageDir.mkdirs()) {
+//                Log.e("CameraLogger", "failed to create directory");
+//                return null;
+//            }
+//        }
+        // Daniel (2017-01-20 12:09:34): Use cache directory instead
+        final File filePath = getContext().getExternalCacheDir();
+
+        if (filePath != null && !filePath.exists()) {
+            filePath.mkdirs();
         }
+
         // Create a media file name
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss")
                 .format(new Date());
         File mediaFile;
-        mediaFile = new File(mediaStorageDir.getPath() + File.separator
-                + "CameraLibrary_"+ timeStamp +"_.jpg");
+        mediaFile = new File(filePath, "CameraLibrary_"+ timeStamp +"_.jpg");
+
+        try {
+            mediaFile.createNewFile();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
         return mediaFile;
     }
