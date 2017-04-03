@@ -4,7 +4,7 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:2.2.3'
+        classpath 'com.android.tools.build:gradle:2.3.0'
         classpath 'com.novoda:bintray-release:0.3.4'
     }
 }
@@ -47,8 +47,13 @@ android {
     }
 }
 
+repositories {
+    jcenter()
+    mavenCentral()
+}
+
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
-//    testCompile 'junit:junit:4.12'
-    compile 'com.android.support:appcompat-v7:25.1.0'
+    testCompile 'junit:junit:4.12'
+    compile 'com.android.support:appcompat-v7:25.3.0'
 }

@@ -1,6 +1,7 @@
 package com.danielpark.camerasample;
 
 import android.Manifest;
+import android.graphics.BitmapFactory;
 import android.os.Build;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
@@ -19,8 +20,6 @@ import com.danielpark.camera.CameraApiChecker;
 import com.danielpark.camera.listeners.OnTakePictureListener;
 import com.danielpark.camera.util.AutoFitTextureView;
 import com.danielpark.camera.util.CameraLogger;
-import com.danielpark.commonutility.CommonUtilityLogger;
-import com.danielpark.commonutility.util.BitmapSamplingUtil;
 
 import java.io.File;
 import java.io.IOException;
@@ -54,7 +53,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         // Daniel (2016-08-23 10:45:00): Turn on CameraLogger Log switch
         CameraLogger.enable();
-        CommonUtilityLogger.enable();	// Turn on utility Log switch
 
         try {
             cameraPreview =  CameraApiChecker.getInstance().build(this);
@@ -158,7 +156,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         try {
             if (thumbnail != null)
-                thumbnail.setImageBitmap(BitmapSamplingUtil.getBitmap(this, file));
+                thumbnail.setImageBitmap(BitmapFactory.decodeFile(file.getAbsolutePath()));
         } catch (Exception e) {
             e.printStackTrace();
         }
