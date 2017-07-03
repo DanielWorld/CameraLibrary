@@ -28,7 +28,6 @@ import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Message;
-import android.support.annotation.NonNull;
 import android.util.Log;
 import android.util.Size;
 import android.util.SparseIntArray;
@@ -252,9 +251,9 @@ public class Camera2Preview extends AutoFitTextureView {
 
 
         @Override
-        public void onCaptureCompleted(@NonNull CameraCaptureSession session,
-                                       @NonNull CaptureRequest request,
-                                       @NonNull TotalCaptureResult result) {
+        public void onCaptureCompleted(CameraCaptureSession session,
+                                       CaptureRequest request,
+                                       TotalCaptureResult result) {
 
             switch (mState) {
                 case STATE_PREVIEW: {
@@ -1005,9 +1004,9 @@ public class Camera2Preview extends AutoFitTextureView {
                         = new CameraCaptureSession.CaptureCallback() {
 
                     @Override
-                    public void onCaptureCompleted(@NonNull CameraCaptureSession session,
-                                                   @NonNull CaptureRequest request,
-                                                   @NonNull TotalCaptureResult result) {
+                    public void onCaptureCompleted(CameraCaptureSession session,
+                                                   CaptureRequest request,
+                                                   TotalCaptureResult result) {
 
                         LOG.d("File path : " + mTakePictureFile.getAbsolutePath());
                         unlockFocus();

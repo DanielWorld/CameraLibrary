@@ -3,7 +3,7 @@ package com.danielpark.camera.util;
 import android.content.Context;
 import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraAccessException;
-import android.support.annotation.CallSuper;
+//import android.support.annotation.CallSuper;
 import android.util.AttributeSet;
 import android.view.TextureView;
 
@@ -81,13 +81,13 @@ public class AutoFitTextureView extends TextureView implements ControlInterface{
 
     }
 
-    @CallSuper
+//    @CallSuper
     @Override
     public void takePicture() {
 
     }
 
-    @CallSuper
+//    @CallSuper
     @Override
     public void flashToggle() {
 
@@ -113,7 +113,7 @@ public class AutoFitTextureView extends TextureView implements ControlInterface{
 
     }
 
-    @CallSuper
+//    @CallSuper
     @Override
     public void finishCamera() {
 

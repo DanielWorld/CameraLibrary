@@ -1,6 +1,6 @@
 package com.danielpark.camera.listeners;
 
-import android.support.annotation.NonNull;
+//import android.support.annotation.NonNull;
 
 import java.io.File;
 
@@ -14,7 +14,7 @@ public interface OnTakePictureListener {
      * Send a capture image file
      * @param file
      */
-    void onTakePicture(@NonNull File file);
+    void onTakePicture(File file);
 
     /**
      * Check if camera lens is focused successfully
