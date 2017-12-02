@@ -1,82 +1,86 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.percent.PercentRelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    tools:context="com.danielpark.camerasample.MainActivity">
-
-    <TextView
-        android:id="@+id/topView"
-        android:layout_width="match_parent"
-        app:layout_heightPercent="10%"
-        android:layout_alignParentTop="true"
-        android:background="@android:color/black"
-        android:text="Title"
-        android:visibility="gone"
-        android:textColor="@android:color/white" />
-
-    <FrameLayout
-        android:id="@+id/container"
-        android:background="@android:color/black"
-        app:layout_widthPercent="100%"
-        app:layout_heightPercent="80%"
-        android:layout_centerHorizontal="true" />
+    xmlns:tools="http://schemas.android.com/tools">
 
     <RelativeLayout
-        android:id="@+id/bottomView"
         android:layout_width="match_parent"
-        app:layout_heightPercent="20%"
-        android:background="@android:color/holo_orange_light"
-        android:text="Button"
-        android:textColor="@android:color/white"
-        android:layout_alignParentBottom="true"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentStart="true">
+        android:layout_height="match_parent"
+        tools:context="com.danielpark.camerasample.MainActivity">
 
-        <ImageButton
-            style="?android:attr/buttonStyleSmall"
-            android:layout_width="wrap_content"
+        <RelativeLayout
+            android:id="@+id/bottomView"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:src="@mipmap/ic_autorenew_black_24dp"
-            android:id="@+id/autoFocusBtn"
-            android:layout_alignParentTop="true"
-            />
+            android:layout_alignParentBottom="true"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentStart="true"
+            android:background="@android:color/holo_orange_light">
 
-        <ImageButton
-            style="?android:attr/buttonStyleSmall"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:src="@mipmap/ic_camera_enhance_black_24dp"
-            android:id="@+id/takePictureBtn"
-            android:layout_below="@+id/autoFocusBtn"
-            android:layout_alignLeft="@+id/autoFocusBtn"
-            android:layout_alignStart="@+id/autoFocusBtn" />
+            <ImageButton
+                android:id="@+id/autoFocusBtn"
+                style="?android:attr/buttonStyleSmall"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentTop="true"
+                android:src="@mipmap/ic_autorenew_black_24dp" />
 
-        <ImageButton
-            style="?android:attr/buttonStyleSmall"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:src="@mipmap/ic_settings_black_24dp"
-            android:id="@+id/settingBtn"
-            android:layout_below="@+id/autoFocusBtn"
-            android:layout_toRightOf="@+id/takePictureBtn"/>
+            <ImageButton
+                android:id="@+id/takePictureBtn"
+                style="?android:attr/buttonStyleSmall"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignLeft="@+id/autoFocusBtn"
+                android:layout_alignStart="@+id/autoFocusBtn"
+                android:layout_below="@+id/autoFocusBtn"
+                android:src="@mipmap/ic_camera_enhance_black_24dp" />
 
-        <ImageButton
-            style="?android:attr/buttonStyleSmall"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:src="@mipmap/ic_wb_incandescent_black_24dp"
-            android:id="@+id/flashBtn"
-            android:layout_above="@+id/takePictureBtn"
-            android:layout_toRightOf="@+id/takePictureBtn"
-            android:layout_toEndOf="@+id/takePictureBtn" />
+            <ImageButton
+                android:id="@+id/settingBtn"
+                style="?android:attr/buttonStyleSmall"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@+id/autoFocusBtn"
+                android:layout_toRightOf="@+id/takePictureBtn"
+                android:src="@mipmap/ic_settings_black_24dp" />
 
-        <ImageView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:id="@+id/imageView"
-            android:layout_toRightOf="@+id/flashBtn"
-            android:layout_toEndOf="@+id/flashBtn" />
+            <ImageButton
+                android:id="@+id/flashBtn"
+                style="?android:attr/buttonStyleSmall"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_above="@+id/takePictureBtn"
+                android:layout_toEndOf="@+id/takePictureBtn"
+                android:layout_toRightOf="@+id/takePictureBtn"
+                android:src="@mipmap/ic_wb_incandescent_black_24dp" />
+
+            <ImageButton
+                android:id="@+id/recordBtn"
+                style="?android:attr/buttonStyleSmall"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@+id/takePictureBtn"
+                android:layout_alignLeft="@+id/autoFocusBtn"
+                android:layout_alignStart="@+id/autoFocusBtn"
+                android:src="@mipmap/ic_record_voice_over_black_24dp" />
+
+            <ImageView
+                android:id="@+id/imageView"
+                android:layout_width="wrap_content"
+                android:layout_height="140dp"
+                android:adjustViewBounds="true"
+                android:layout_centerVertical="true"
+                android:layout_toEndOf="@+id/flashBtn"
+                android:layout_toRightOf="@+id/flashBtn" />
+        </RelativeLayout>
+
+        <FrameLayout
+            android:id="@+id/container"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_above="@+id/bottomView"
+            android:layout_centerHorizontal="true"
+            android:background="@android:color/black" />
+
     </RelativeLayout>
-</android.support.percent.PercentRelativeLayout>
+</layout>

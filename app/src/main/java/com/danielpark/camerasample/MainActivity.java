@@ -1,62 +1,71 @@
 package com.danielpark.camerasample;
 
 import android.Manifest;
+import android.annotation.TargetApi;
+import android.content.Intent;
+import android.databinding.DataBindingUtil;
 import android.graphics.BitmapFactory;
+import android.net.Uri;
 import android.os.Build;
+import android.os.Bundle;
+import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
-import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
-import android.widget.FrameLayout;
-import android.widget.ImageButton;
-import android.widget.ImageView;
-import android.widget.RelativeLayout;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import com.danielpark.camera.CameraApiChecker;
 import com.danielpark.camera.listeners.OnTakePictureListener;
 import com.danielpark.camera.util.AutoFitTextureView;
 import com.danielpark.camera.util.CameraLogger;
+import com.danielpark.camerasample.databinding.ActivityMainBinding;
+
+import net.danielpark.library.dialog.DialogInput;
+import net.danielpark.library.dialog.DialogUtil;
+import net.danielpark.library.log.Logger;
+import net.danielpark.library.util.PermissionChecker;
 
 import java.io.File;
 import java.io.IOException;
 
-public class MainActivity extends AppCompatActivity implements View.OnClickListener, OnTakePictureListener {
+public class MainActivity extends AppCompatActivity implements View.OnClickListener, OnTakePictureListener, PermissionChecker.OnPermissionCheckerListener {
+    private final String TAG = MainActivity.class.getSimpleName();
 
-    final int REQUEST_PERMISSION = 1001;
+    private AutoFitTextureView cameraPreview;
+    private PermissionChecker permissionChecker;
 
-    AutoFitTextureView cameraPreview;
-    ImageView thumbnail;
+    private ActivityMainBinding binding;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        binding = DataBindingUtil.setContentView(this, R.layout.activity_main);
 
-        FrameLayout containerView = (FrameLayout) findViewById(R.id.container);
-        TextView topView = (TextView) findViewById(R.id.topView);
-        RelativeLayout bottomView = (RelativeLayout) findViewById(R.id.bottomView);
-        ImageButton button = (ImageButton) findViewById(R.id.autoFocusBtn);
-        ImageButton button2 = (ImageButton) findViewById(R.id.takePictureBtn);
-        ImageButton button3 = (ImageButton) findViewById(R.id.flashBtn);
-        ImageButton button4 = (ImageButton) findViewById(R.id.settingBtn);
+        permissionChecker = new PermissionChecker(this);
+        permissionChecker
+                .withPermissions(
+                    new String[]{
+                            Manifest.permission.CAMERA, Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE
+                    })
+                .withListener(this)
+                .check();
+    }
 
-        thumbnail = (ImageView) findViewById(R.id.imageView);
+    private void onProceedStep() {
 
-        button.setOnClickListener(this);
-        button2.setOnClickListener(this);
-        button3.setOnClickListener(this);
-        button4.setOnClickListener(this);
+        binding.autoFocusBtn.setOnClickListener(this);
+        binding.takePictureBtn.setOnClickListener(this);
+        binding.flashBtn.setOnClickListener(this);
+        binding.settingBtn.setOnClickListener(this);
 
         // Daniel (2016-08-23 10:45:00): Turn on CameraLogger Log switch
         CameraLogger.enable();
+        Logger.setLogState(true);
 
         try {
             cameraPreview =  CameraApiChecker.getInstance().build(this);
-            containerView.addView(cameraPreview);
+            binding.container.addView(cameraPreview);
 
             /**
              * Daniel (2016-11-05 18:42:58): It is required to listen taking a picture event, and auto-focus event
@@ -82,11 +91,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         } catch (IOException e) {
             Toast.makeText(MainActivity.this, e.getMessage(), Toast.LENGTH_SHORT).show();
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                requestPermissions(new String[]{
-                        Manifest.permission.CAMERA, Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE
-                }, REQUEST_PERMISSION);
-            }
+            finish();
         }
     }
 
@@ -97,10 +102,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         try {
 //			// Daniel (2016-05-17 14:37:25): TextureView 여부를 체크한 뒤 , textureView open!
             if (cameraPreview.isAvailable()) {
-                Log.d("CameraLogger", "TextureView is available!");
+                Logger.d(TAG, "TextureView is available!");
                 cameraPreview.openCamera(cameraPreview.getSurfaceTexture(), cameraPreview.getWidth(), cameraPreview.getHeight());
             } else {
-                Log.d("CameraLogger", "TextureView is not available!");
+                Logger.d(TAG, "TextureView is not available!");
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -115,11 +120,44 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             cameraPreview.releaseCamera();
     }
 
+    @TargetApi(Build.VERSION_CODES.M)
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        permissionChecker.onRequestPermissionsResult(requestCode, permissions, grantResults);
+    }
 
-        // TODO: You can build logic later
+    @Override
+    public void onPermissionCheckerResult(@NonNull PermissionChecker.PermissionState permissionState) {
+        switch (permissionState) {
+            case Granted:
+                onProceedStep();
+                break;
+            case Denied:
+                finish();
+                break;
+            case Farewell:
+                DialogUtil.showDefaultDialog(this,
+                        new DialogInput.Builder()
+                                .setCancelable(false)
+                                .setMessage("We need those permissions!")
+                                .setMiddleButtonText(getString(android.R.string.ok))
+                                .setClickListener((dialog, which) -> {
+                                    // Direct user to setting page
+                                    Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                            Uri.fromParts("package", getPackageName(), null));
+                                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                                    intent.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
+                                    intent.addFlags(Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS);
+                                    startActivity(intent);
+
+                                    dialog.dismiss();
+
+                                    finish();
+                                })
+                                .build());
+                break;
+        }
     }
 
     @Override
@@ -155,8 +193,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         Toast.makeText(this, file.getAbsolutePath(), Toast.LENGTH_SHORT).show();
 
         try {
-            if (thumbnail != null)
-                thumbnail.setImageBitmap(BitmapFactory.decodeFile(file.getAbsolutePath()));
+            if (binding.imageView != null)
+                binding.imageView.setImageBitmap(BitmapFactory.decodeFile(file.getAbsolutePath()));
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -166,4 +204,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public void onLensFocused(boolean isFocused) {
         Toast.makeText(this, "Lens focused : " + isFocused, Toast.LENGTH_SHORT).show();
     }
+
+
 }
