@@ -1,45 +1,81 @@
 #http://proguard.sourceforge.net/manual/examples.html
 #http://proguard.sourceforge.net/manual/usage.html
 
--keepattributes Exceptions,InnerClasses,Signature,Deprecated,LineNumberTable,*Annotation*,EnclosingMethod
+##---------------Begin: proguard configuration common for all Android apps ----------
+-optimizationpasses 5
+-dontusemixedcaseclassnames
+-dontskipnonpubliclibraryclasses
+-dontskipnonpubliclibraryclassmembers
+-dontpreverify
+-verbose
+-dump class_files.txt
+-printseeds seeds.txt
+-printusage unused.txt
+-printmapping mapping.txt
+-optimizations !code/simplification/arithmetic,!field/*,!class/merging/*
 
--keepclasseswithmembers class * {
-	native <methods>;
+-allowaccessmodification
+-keepattributes *Annotation*
+-renamesourcefileattribute SourceFile
+-keepattributes SourceFile,LineNumberTable
+-repackageclasses ''
+
+-keep public class * extends android.app.Activity
+-keep public class * extends android.app.Application
+-keep public class * extends android.app.Service
+-keep public class * extends android.content.BroadcastReceiver
+-keep public class * extends android.content.ContentProvider
+-keep public class * extends android.app.backup.BackupAgentHelper
+-keep public class * extends android.preference.Preference
+-keep public class com.android.vending.licensing.ILicensingService
+-dontnote com.android.vending.licensing.ILicensingService
+-keep public class * extends java.lang.Exception
+
+# Explicitly preserve all serialization members. The Serializable interface
+# is only a marker interface, so it wouldn't save them.
+-keepclassmembers class * implements java.io.Serializable {
+    static final long serialVersionUID;
+    private static final java.io.ObjectStreamField[] serialPersistentFields;
+    private void writeObject(java.io.ObjectOutputStream);
+    private void readObject(java.io.ObjectInputStream);
+    java.lang.Object writeReplace();
+    java.lang.Object readResolve();
 }
--keepclasseswithmembers class * {
-    public <init>(android.content.Context);
+
+# Preserve all native method names and the names of their classes.
+-keepclasseswithmembernames class * {
+    native <methods>;
 }
--keepclasseswithmembers class * {
+
+-keepclasseswithmembernames class * {
     public <init>(android.content.Context, android.util.AttributeSet);
 }
--keepclasseswithmembers class * {
+
+-keepclasseswithmembernames class * {
     public <init>(android.content.Context, android.util.AttributeSet, int);
 }
 
--keepclasseswithmembers class com.danielpark.camera.util.CameraLogger {
-    public <methods>;
+# Preserve static fields of inner classes of R classes that might be accessed
+# through introspection.
+-keepclassmembers class **.R$* {
+  public static <fields>;
 }
 
--keepclasseswithmembers class com.danielpark.camera.util.AutoFitTextureView {
-    public <methods>;
+-keepclassmembers class * extends android.app.Activity {
+   public void *(android.view.View);
 }
 
--keepclasseswithmembers class com.danielpark.camera.CameraApiChecker {
-   public static synchronized com.danielpark.camera.CameraApiChecker getInstance();
-   public com.danielpark.camera.CameraApiChecker setOrientation(int);
-   public com.danielpark.camera.util.AutoFitTextureView build(android.app.Activity);
+# Preserve the special static methods that are required in all enumeration classes.
+-keepclassmembers enum * {
+    public static **[] values();
+    public static ** valueOf(java.lang.String);
 }
 
--keepclasseswithmembers interface com.danielpark.camera.listeners.ControlInterface {
-    <methods>;
-}
--keepclasseswithmembers interface com.danielpark.camera.listeners.OnTakePictureListener {
-    <methods>;
+-keep public class * {
+    public protected *;
 }
 
--keepclasseswithmembers class com.danielpark.camera.CameraPreview {
-    public <methods>;
+-keep class * implements android.os.Parcelable {
+  public static final android.os.Parcelable$Creator *;
 }
--keepclasseswithmembers class com.danielpark.camera.Camera2Preview {
-    public <methods>;
-}
+##---------------End: proguard configuration common for all Android apps ----------
