@@ -248,7 +248,10 @@ public class CameraPreview extends AutoFitTextureView{
 
         // 7. choose Optimal preview size!
         // Daniel (2016-11-05 13:59:19): : use the largest preview size for better quality
-        mPreviewSize = largestPreviewSize;
+//        mPreviewSize = largestPreviewSize;
+        // TODO: No need to add largest preview, because view size could be small
+        mPreviewSize = chooseOptimalSize(mCamera.getParameters().getSupportedPreviewSizes(),
+                width, height, largestPreviewSize.width, largestPreviewSize.height);
         LOG.d("7. Optimal Preview size : " + mPreviewSize.width + " , " + mPreviewSize.height);
 
         // 8. choose Optimal Picture size!
@@ -377,6 +380,33 @@ public class CameraPreview extends AutoFitTextureView{
                         matrix.setRectToRect(viewRect, bufferRect, Matrix.ScaleToFit.FILL);
 
                         // TODO: add margin to take a correct picture
+                        // Daniel (2016-11-07 21:59:28): get Scale to fit view size (container) not screen!!!
+                        float scale = Math.max(
+                                (float) viewWidth / mPreviewSize.width,
+                                (float) viewHeight / mPreviewSize.height
+                        );
+                        LOG.d("scale : " + scale);
+                        matrix.postScale(scale, scale, centerX, centerY);
+
+                        // Daniel (2016-11-07 22:36:43): Calculate margin to crop Image
+                        // Daniel (2016-11-08 11:33:57): TODO: Reverse width & height
+                        // Daniel (2016-11-08 11:35:33): Because it has to be rotate then x/y will be converted each other
+                        float currentExpectedWidthSize = bufferRect.width() * scale;
+                        float currentExpectedHeightSize = bufferRect.height() * scale;
+
+                        // Daniel (2016-11-08 00:38:08): save the latest view size
+                        mLatestViewSize.set(currentExpectedWidthSize, currentExpectedHeightSize);
+
+                        LOG.d("currentVisibleWidth : " + currentExpectedWidthSize);
+                        LOG.d("x_margin : " + (currentExpectedWidthSize - viewWidth));
+                        mConfigureTransformMargin.left = (currentExpectedWidthSize - viewWidth) / 2;
+                        mConfigureTransformMargin.right = (currentExpectedWidthSize - viewWidth) / 2;
+
+                        LOG.d("currentVisibleHeight : " + currentExpectedHeightSize);
+                        LOG.d("y_margin : " + (currentExpectedHeightSize - viewHeight));
+                        mConfigureTransformMargin.top = (currentExpectedHeightSize - viewHeight) / 2;
+                        mConfigureTransformMargin.bottom = (currentExpectedHeightSize - viewHeight) / 2;
+
                         break;
                     }
                     // Daniel (2016-11-08 11:44:18): TEST COMPLETED!
@@ -441,6 +471,30 @@ public class CameraPreview extends AutoFitTextureView{
                         matrix.setRectToRect(viewRect, bufferRect, Matrix.ScaleToFit.FILL);
 
                         // TODO: add margin to take a correct picture
+                        // Daniel (2016-11-07 21:59:28): get Scale to fit view size (container) not screen!!!
+                        float scale = Math.max(
+                                (float) viewWidth / mPreviewSize.width,
+                                (float) viewHeight / mPreviewSize.height
+                        );
+                        LOG.d("scale : " + scale);
+                        matrix.postScale(scale, scale, centerX, centerY);
+
+                        // Daniel (2016-11-07 22:36:43): Calculate margin to crop Image
+                        float currentExpectedWidthSize = bufferRect.width() * scale;
+                        float currentExpectedHeightSize = bufferRect.height() * scale;
+
+                        // Daniel (2016-11-08 00:38:08): save the latest view size
+                        mLatestViewSize.set(currentExpectedWidthSize, currentExpectedHeightSize);
+
+                        LOG.d("currentVisibleWidth : " + currentExpectedWidthSize);
+                        LOG.d("x_margin : " + (currentExpectedWidthSize - viewWidth));
+                        mConfigureTransformMargin.left = (currentExpectedWidthSize - viewWidth) / 2;
+                        mConfigureTransformMargin.right = (currentExpectedWidthSize - viewWidth) / 2;
+
+                        LOG.d("currentVisibleHeight : " + currentExpectedHeightSize);
+                        LOG.d("y_margin : " + (currentExpectedHeightSize - viewHeight));
+                        mConfigureTransformMargin.top = (currentExpectedHeightSize - viewHeight) / 2;
+                        mConfigureTransformMargin.bottom = (currentExpectedHeightSize - viewHeight) / 2;
 
                         matrix.postRotate(-180, centerX, centerY);
                         break;
