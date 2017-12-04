@@ -76,8 +76,8 @@
 
         <FrameLayout
             android:id="@+id/container"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_width="250dp"
+            android:layout_height="350dp"
             android:layout_above="@+id/bottomView"
             android:layout_centerHorizontal="true"
             android:background="@android:color/black" />
