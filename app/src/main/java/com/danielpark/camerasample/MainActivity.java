@@ -64,7 +64,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         Logger.setLogState(true);
 
         try {
-            cameraPreview =  CameraApiChecker.getInstance().build(this);
+            cameraPreview =  CameraApiChecker.getInstance()
+                    .setCameraType(CameraApiChecker.CameraType.CAMERA_FACING_FRONT)
+                    .build(this);
             binding.container.addView(cameraPreview);
 
             /**

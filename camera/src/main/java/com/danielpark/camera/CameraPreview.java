@@ -15,8 +15,6 @@ import android.graphics.YuvImage;
 import android.hardware.Camera;
 import android.hardware.SensorManager;
 import android.os.Build;
-import android.os.Environment;
-import android.util.Log;
 import android.util.SparseIntArray;
 import android.view.OrientationEventListener;
 import android.view.Surface;
@@ -61,6 +59,13 @@ public class CameraPreview extends AutoFitTextureView{
     private OnTakePictureListener onTakePictureListener;
     private OrientationEventListener mOrientationEventListener;
 
+    /**
+     * Camera lens type : <br>
+     *     {@link android.hardware.Camera.CameraInfo#CAMERA_FACING_FRONT},
+     *     {@link android.hardware.Camera.CameraInfo#CAMERA_FACING_BACK}
+     */
+    private int mCameraLensType;
+
     private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
 
     static {
@@ -70,8 +75,9 @@ public class CameraPreview extends AutoFitTextureView{
         ORIENTATIONS.append(Surface.ROTATION_270, 270);
     }
 
-    public CameraPreview(Activity context) {
+    public CameraPreview(Activity context, int cameraType) {
         super(context);
+        this.mCameraLensType = cameraType;
 
         setSurfaceTextureListener(mSurfaceTextureListener);
     }
@@ -122,7 +128,7 @@ public class CameraPreview extends AutoFitTextureView{
             mOrientationEventListener.enable();
 
         if (mCamera == null)
-            mCamera = Camera.open();
+            mCamera = Camera.open(mCameraLensType);
 
         try {
             setUpCameraOutput(width, height);
@@ -201,7 +207,7 @@ public class CameraPreview extends AutoFitTextureView{
          * It should be 0, 90, 180, or 270.
          */
         Camera.CameraInfo cameraInfo = new Camera.CameraInfo();
-        Camera.getCameraInfo(Camera.CameraInfo.CAMERA_FACING_BACK, cameraInfo);
+        Camera.getCameraInfo(mCameraLensType, cameraInfo);
         mSensorOrientation = cameraInfo.orientation;
         LOG.d("3. Camera Lens orientation : " + mSensorOrientation);
         mCamera.setDisplayOrientation(mSensorOrientation);
@@ -868,7 +874,7 @@ public class CameraPreview extends AutoFitTextureView{
         // Daniel (2016-11-03 16:12:52): Start taking picture
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
             Camera.CameraInfo cameraInfo = new Camera.CameraInfo();
-            Camera.getCameraInfo(Camera.CameraInfo.CAMERA_FACING_BACK, cameraInfo);
+            Camera.getCameraInfo(mCameraLensType, cameraInfo);
             if (cameraInfo.canDisableShutterSound) {
                 captureStillPicture();
                 return;
