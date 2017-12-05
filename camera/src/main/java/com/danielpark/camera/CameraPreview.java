@@ -427,9 +427,13 @@ public class CameraPreview extends AutoFitTextureView{
                         matrix.setRectToRect(viewRect, bufferRect, Matrix.ScaleToFit.FILL);
 
                         // Daniel (2016-11-07 21:59:28): get Scale to fit view size (container) not screen!!!
+//                        float scale = Math.max(
+//                                (float) viewWidth / mPreviewSize.height,
+//                                (float) viewHeight / mPreviewSize.width
+//                        );
                         float scale = Math.max(
-                                (float) viewWidth / mPreviewSize.height,
-                                (float) viewHeight / mPreviewSize.width
+                                (float) viewWidth / mPreviewSize.width,
+                                (float) viewHeight / mPreviewSize.height
                         );
                         LOG.d("scale : " + scale);
                         matrix.postScale(scale, scale, centerX, centerY);
