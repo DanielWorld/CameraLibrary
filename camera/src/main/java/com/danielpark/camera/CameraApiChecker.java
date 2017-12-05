@@ -98,7 +98,7 @@ public class CameraApiChecker {
             case Landscape:
                 context.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
                 break;
-            case None:
+            case AutoSet:
                 fixOrientation(context);
                 break;
         }
