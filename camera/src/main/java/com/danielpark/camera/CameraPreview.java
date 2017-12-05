@@ -843,43 +843,80 @@ public class CameraPreview extends AutoFitTextureView{
 
         int orientation = getResources().getConfiguration().orientation;
 
-        if (orientation == Configuration.ORIENTATION_PORTRAIT) {
-            if (rotation == Surface.ROTATION_0) {
-                if (mLastOrientation >= 45 && mLastOrientation <= 90 + 45)
-                    return 90;
-                else if (mLastOrientation >= 90 + 45 && mLastOrientation <= 90 * 2 + 45)
-                    return 180;
-                else if (mLastOrientation >= 90 * 2 + 45 && mLastOrientation <= 90 * 3 + 45)
-                    return 270;
-                return 0;
-            } else {
-                if (mLastOrientation >= 45 && mLastOrientation <= 90 + 45)
+        if (mCameraLensType == Camera.CameraInfo.CAMERA_FACING_BACK) {
+
+            if (orientation == Configuration.ORIENTATION_PORTRAIT) {
+
+                if (rotation == Surface.ROTATION_0 || rotation == Surface.ROTATION_180) {
+                    if (mLastOrientation >= 45 && mLastOrientation <= 90 + 45)
+                        return 90;
+                    else if (mLastOrientation >= 90 + 45 && mLastOrientation <= 90 * 2 + 45)
+                        return 180;
+                    else if (mLastOrientation >= 90 * 2 + 45 && mLastOrientation <= 90 * 3 + 45)
+                        return 270;
                     return 0;
-                else if (mLastOrientation >= 90 + 45 && mLastOrientation <= 90 * 2 + 45)
-                    return 90;
-                else if (mLastOrientation >= 90 * 2 + 45 && mLastOrientation <= 90 * 3 + 45)
-                    return 180;
-                return 270;
+                }
+                else {
+                    if (mLastOrientation >= 45 && mLastOrientation <= 90 + 45)
+                        return 0;
+                    else if (mLastOrientation >= 90 + 45 && mLastOrientation <= 90 * 2 + 45)
+                        return 90;
+                    else if (mLastOrientation >= 90 * 2 + 45 && mLastOrientation <= 90 * 3 + 45)
+                        return 180;
+                    return 270;
+                }
             }
-        } else {
-            if (rotation == Surface.ROTATION_0) {
-                if (mLastOrientation >= 45 && mLastOrientation <= 90 + 45)
-                    return 90;
-                else if (mLastOrientation >= 90 + 45 && mLastOrientation <= 90 * 2 + 45)
-                    return 180;
-                else if (mLastOrientation >= 90 * 2 + 45 && mLastOrientation <= 90 * 3 + 45)
-                    return 270;
-                return 0;
-            } else {
-                if (mLastOrientation >= 45 && mLastOrientation <= 90 + 45)
-                    return 180;
-                else if (mLastOrientation >= 90 + 45 && mLastOrientation <= 90 * 2 + 45)
-                    return 270;
-                else if (mLastOrientation >= 90 * 2 + 45 && mLastOrientation <= 90 * 3 + 45)
+            else if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
+
+                if (rotation == Surface.ROTATION_0 || rotation == Surface.ROTATION_180) {
+                    if (mLastOrientation >= 45 && mLastOrientation <= 90 + 45)
+                        return 90;
+                    else if (mLastOrientation >= 90 + 45 && mLastOrientation <= 90 * 2 + 45)
+                        return 180;
+                    else if (mLastOrientation >= 90 * 2 + 45 && mLastOrientation <= 90 * 3 + 45)
+                        return 270;
                     return 0;
-                return 90;
+                }
+                else {
+                    if (mLastOrientation >= 45 && mLastOrientation <= 90 + 45)
+                        return 180;
+                    else if (mLastOrientation >= 90 + 45 && mLastOrientation <= 90 * 2 + 45)
+                        return 270;
+                    else if (mLastOrientation >= 90 * 2 + 45 && mLastOrientation <= 90 * 3 + 45)
+                        return 0;
+                    return 90;
+                }
             }
         }
+        else if (mCameraLensType == Camera.CameraInfo.CAMERA_FACING_FRONT) {
+
+            if (orientation == Configuration.ORIENTATION_PORTRAIT) {
+                // TODO: Need test cases...
+            }
+            else if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
+
+                if (rotation == Surface.ROTATION_0 || rotation == Surface.ROTATION_180) {
+                    if (mLastOrientation >= 45 && mLastOrientation <= 90 + 45)
+                        return 90;
+                    else if (mLastOrientation >= 90 + 45 && mLastOrientation <= 90 * 2 + 45)
+                        return 180;
+                    else if (mLastOrientation >= 90 * 2 + 45 && mLastOrientation <= 90 * 3 + 45)
+                        return 270;
+                    return 0;
+                }
+                else {
+                    if (mLastOrientation >= 45 && mLastOrientation <= 90 + 45)
+                        return 0;
+                    else if (mLastOrientation >= 90 + 45 && mLastOrientation <= 90 * 2 + 45)
+                        return 270;
+                    else if (mLastOrientation >= 90 * 2 + 45 && mLastOrientation <= 90 * 3 + 45)
+                        return 180;
+                    return 90;
+                }
+            }
+        }
+
+        return 0;
     }
 
     @Override

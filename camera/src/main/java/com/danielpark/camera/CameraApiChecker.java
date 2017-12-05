@@ -41,7 +41,7 @@ public class CameraApiChecker {
     }
 
     private CameraOrientation orientationMode = CameraOrientation.None;    // None : means nothing happen!
-    private CameraType cameraType = CameraType.CAMERA_FACING_BACK;
+    private int cameraType = Camera.CameraInfo.CAMERA_FACING_BACK;
 
     /**
      *
@@ -61,7 +61,13 @@ public class CameraApiChecker {
     public CameraApiChecker setCameraType(CameraType cameraType) {
         if (cameraType == null) return this;
 
-        this.cameraType = cameraType;
+        if (cameraType == CameraType.CAMERA_FACING_FRONT) {
+            this.cameraType = Camera.CameraInfo.CAMERA_FACING_FRONT;
+        }
+        else if (cameraType == CameraType.CAMERA_FACING_BACK) {
+            this.cameraType = Camera.CameraInfo.CAMERA_FACING_BACK;
+        }
+
         return this;
     }
 
@@ -106,17 +112,9 @@ public class CameraApiChecker {
 //        if (checkCamera2BackLensSupport(context)) {
 //            return new Camera2Preview(context);
 //        } else {
-        checkCamera1LensSupport(cameraType);
+        checkCamera1LensSupport();
 
-        if (cameraType == CameraType.CAMERA_FACING_BACK) {
-            return new CameraPreview(context, Camera.CameraInfo.CAMERA_FACING_BACK);
-        }
-        else if (cameraType == CameraType.CAMERA_FACING_FRONT) {
-            return new CameraPreview(context, Camera.CameraInfo.CAMERA_FACING_FRONT);
-        }
-        else {
-            throw new RuntimeException("Failed to figure Camera lens type!");
-        }
+        return new CameraPreview(context, cameraType);
 //        }
     }
 
@@ -140,14 +138,7 @@ public class CameraApiChecker {
     private void fixOrientation(Activity context) {
         LOG.d("FixOrientation()");
 
-        Camera camera = null;
-
-        if (cameraType == CameraType.CAMERA_FACING_FRONT) {
-            camera = Camera.open(1);
-        }
-        else if (cameraType == CameraType.CAMERA_FACING_BACK) {
-            camera = Camera.open();
-        }
+        Camera camera = Camera.open(cameraType);
 
         if (camera == null)
             throw new UnsupportedOperationException("No Camera1 " + cameraType + " Lens!");
@@ -238,17 +229,10 @@ public class CameraApiChecker {
     /**
      * Check if the device supports back facing lens in Camera
      */
-    private void checkCamera1LensSupport(CameraType cameraType) {
+    private void checkCamera1LensSupport() {
         // http://stackoverflow.com/questions/26305107/how-to-fix-fail-to-connect-to-camera-service-exception-in-android-emulator
         // Daniel (2016-11-14 10:57:35): For now, it is useless
-        Camera camera = null;
-
-        if (CameraType.CAMERA_FACING_FRONT == cameraType) {
-            camera = Camera.open(Camera.CameraInfo.CAMERA_FACING_FRONT);
-        }
-        else if (CameraType.CAMERA_FACING_BACK == cameraType) {
-            camera = Camera.open(Camera.CameraInfo.CAMERA_FACING_BACK);
-        }
+        Camera camera = Camera.open(cameraType);
 
         if (camera == null) {
             throw new UnsupportedOperationException("No Camera1 " + cameraType + " Lens!");
