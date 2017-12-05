@@ -65,6 +65,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         try {
             cameraPreview =  CameraApiChecker.getInstance()
+                    .setOrientation(CameraApiChecker.CameraOrientation.Landscape)
                     .setCameraType(CameraApiChecker.CameraType.CAMERA_FACING_FRONT)
                     .build(this);
             binding.container.addView(cameraPreview);

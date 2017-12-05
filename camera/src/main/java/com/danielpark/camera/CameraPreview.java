@@ -66,6 +66,8 @@ public class CameraPreview extends AutoFitTextureView{
      */
     private int mCameraLensType;
 
+    private final int mFacingFrontRotateDegree;    // Camera facing front lens should rotate 180!
+
     private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
 
     static {
@@ -78,6 +80,12 @@ public class CameraPreview extends AutoFitTextureView{
     public CameraPreview(Activity context, int cameraType) {
         super(context);
         this.mCameraLensType = cameraType;
+
+        // Camera facing front lens should rotate 180!
+        if (cameraType == Camera.CameraInfo.CAMERA_FACING_FRONT)
+            mFacingFrontRotateDegree = 180;
+        else
+            mFacingFrontRotateDegree = 0;
 
         setSurfaceTextureListener(mSurfaceTextureListener);
     }
@@ -371,7 +379,7 @@ public class CameraPreview extends AutoFitTextureView{
 
             if (isCorrectRatioOrientation()) {
                 switch (rotation) {
-                    // Daniel (2016-11-08 11:45:11): TODO: TEST
+                    // Daniel (2016-11-08 11:45:11): TEST COMPLETED!
                     case Surface.ROTATION_0: {
                         if (mConfigureTransformMargin == null) mConfigureTransformMargin = new RectF();
                         final float offset_x = (centerX - bufferRect.centerX());
@@ -412,6 +420,9 @@ public class CameraPreview extends AutoFitTextureView{
                         LOG.d("y_margin : " + (currentExpectedHeightSize - viewHeight));
                         mConfigureTransformMargin.top = (currentExpectedHeightSize - viewHeight) / 2;
                         mConfigureTransformMargin.bottom = (currentExpectedHeightSize - viewHeight) / 2;
+
+                        if (mCameraLensType == Camera.CameraInfo.CAMERA_FACING_FRONT)
+                            matrix.postRotate(mFacingFrontRotateDegree);
 
                         break;
                     }
@@ -463,7 +474,7 @@ public class CameraPreview extends AutoFitTextureView{
                         mConfigureTransformMargin.top = (currentExpectedHeightSize - viewHeight) / 2;
                         mConfigureTransformMargin.bottom = (currentExpectedHeightSize - viewHeight) / 2;
 
-                        matrix.postRotate(-90, centerX, centerY);
+                        matrix.postRotate(-90 + mFacingFrontRotateDegree, centerX, centerY);
                         break;
                     }
                     // Daniel (2016-11-08 11:45:11): TODO: TEST
@@ -506,7 +517,7 @@ public class CameraPreview extends AutoFitTextureView{
                         mConfigureTransformMargin.top = (currentExpectedHeightSize - viewHeight) / 2;
                         mConfigureTransformMargin.bottom = (currentExpectedHeightSize - viewHeight) / 2;
 
-                        matrix.postRotate(-180, centerX, centerY);
+                        matrix.postRotate(-180 + mFacingFrontRotateDegree, centerX, centerY);
                         break;
                     }
                     // Daniel (2016-11-08 11:36:47): TEST COMPLETED!
@@ -553,7 +564,7 @@ public class CameraPreview extends AutoFitTextureView{
                         mConfigureTransformMargin.top = (currentExpectedHeightSize - viewHeight) / 2;
                         mConfigureTransformMargin.bottom = (currentExpectedHeightSize - viewHeight) / 2;
 
-                        matrix.postRotate(-270, centerX, centerY);
+                        matrix.postRotate(-270 + mFacingFrontRotateDegree, centerX, centerY);
                         break;
                     }
                 }
@@ -602,6 +613,10 @@ public class CameraPreview extends AutoFitTextureView{
                         LOG.d("y_margin : " + (currentExpectedHeightSize - viewHeight));
                         mConfigureTransformMargin.top = (currentExpectedHeightSize - viewHeight) / 2;
                         mConfigureTransformMargin.bottom = (currentExpectedHeightSize - viewHeight) / 2;
+
+                        if (mCameraLensType == Camera.CameraInfo.CAMERA_FACING_FRONT)
+                            matrix.postRotate(mFacingFrontRotateDegree);
+
                         break;
                     }
                     // Daniel (2016-11-08 11:45:11): TODO: TEST
@@ -620,7 +635,7 @@ public class CameraPreview extends AutoFitTextureView{
 
                         // TODO: add margin to take a correct picture
 
-                        matrix.postRotate(-90, centerX, centerY);
+                        matrix.postRotate(-90 + mFacingFrontRotateDegree, centerX, centerY);
                         break;
                     }
                     // Daniel (2016-11-08 11:45:11): TODO: TEST
@@ -642,7 +657,7 @@ public class CameraPreview extends AutoFitTextureView{
 
                         // TODO: add margin to take a correct picture
 
-                        matrix.postRotate(-180, centerX, centerY);
+                        matrix.postRotate(-180 + mFacingFrontRotateDegree, centerX, centerY);
                         break;
                     }
                     // Daniel (2016-11-08 11:45:11): TODO: TEST
@@ -661,7 +676,7 @@ public class CameraPreview extends AutoFitTextureView{
 
                         // TODO: add margin to take a correct picture
 
-                        matrix.postRotate(-270, centerX, centerY);
+                        matrix.postRotate(-270 + mFacingFrontRotateDegree, centerX, centerY);
                         break;
                     }
                 }
@@ -918,69 +933,15 @@ public class CameraPreview extends AutoFitTextureView{
 
                             Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
 
-                            // Daniel (2016-08-26 14:01:20): Current Device rotation
-                            WindowManager windowManager = (WindowManager) getContext().getSystemService(Context.WINDOW_SERVICE);
-                            int displayRotation = windowManager.getDefaultDisplay().getRotation();
-                            LOG.d("Current device rotation : " + ORIENTATIONS.get(displayRotation));
+                            recreateToFile(bitmap);
 
-                            int result = (mSensorOrientation - ORIENTATIONS.get(displayRotation) + 360) % 360;
-
-                            Bitmap rotatedBitmap = null;
-
-                            if (result % 360 != 0) {
-                                rotatedBitmap = rotateImage(bitmap, result);
-                                rotatedBitmap = cropImage(rotatedBitmap);
-                            } else {
-                                rotatedBitmap = cropImage(bitmap);
-                            }
-
-                            if (getLastOrientation(mLastOrientation) % 360 != 0)
-                                rotatedBitmap = rotateImage(rotatedBitmap, getLastOrientation(mLastOrientation));
-
-                            File pictureFile = getOutputMediaFile();
-                            if (pictureFile == null) {
-                                return;
-                            }
                             try {
-                                FileOutputStream fos = new FileOutputStream(pictureFile);
-
-                                if (rotatedBitmap != null)
-                                    rotatedBitmap.compress(Bitmap.CompressFormat.JPEG, 95, fos);
-                                else
-                                    bitmap.compress(Bitmap.CompressFormat.JPEG, 95, fos);
-
-                                fos.close();
-                            } catch (FileNotFoundException e) {
-                                e.printStackTrace();
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                            } finally {
-                                LOG.d("File path : " + pictureFile.getAbsolutePath());
-
-                                try {
-                                    // TODO: recycle Bitmap!!!
-                                    if (rotatedBitmap != null) {
-                                        rotatedBitmap.recycle();
-                                        rotatedBitmap = null;
-                                    } else {
-                                        bitmap.recycle();
-                                        bitmap = null;
-                                    }
-                                } catch (Exception e){
-                                    e.printStackTrace();
+                                if (mCamera != null) {
+                                    mCamera.stopPreview();
+                                    mCamera.startPreview();
                                 }
-
-                                if (onTakePictureListener != null && pictureFile != null)
-                                    onTakePictureListener.onTakePicture(pictureFile);
-
-                                try {
-                                    if (mCamera != null) {
-                                        mCamera.stopPreview();
-                                        mCamera.startPreview();
-                                    }
-                                } catch (Exception e){
-                                    e.printStackTrace();
-                                }
+                            } catch (Exception e){
+                                e.printStackTrace();
                             }
                         }
                     }
@@ -1014,71 +975,75 @@ public class CameraPreview extends AutoFitTextureView{
                 byteArrayOutputStream.flush();
                 byteArrayOutputStream.close();
 
-//                Bitmap bitmap = BitmapFactory.decodeByteArray(mPreviewFrame, 0, mPreviewFrame.length);
+                recreateToFile(bitmap);
 
-                // Daniel (2016-08-26 14:01:20): Current Device rotation
-                WindowManager windowManager = (WindowManager) getContext().getSystemService(Context.WINDOW_SERVICE);
-                int displayRotation = windowManager.getDefaultDisplay().getRotation();
-                LOG.d("Current device rotation : " + ORIENTATIONS.get(displayRotation));
+                // remove mPreviewFrame
+                mPreviewFrame = null;
 
-                int result = (mSensorOrientation - ORIENTATIONS.get(displayRotation) + 360) % 360;
-
-                Bitmap rotatedBitmap = null;
-
-                if (result % 360 != 0) {
-                    rotatedBitmap = rotateImage(bitmap, result);
-                    rotatedBitmap = cropImage(rotatedBitmap);
-                } else {
-                    rotatedBitmap = cropImage(bitmap);
-                }
-
-                if (getLastOrientation(mLastOrientation) % 360 != 0)
-                    rotatedBitmap = rotateImage(rotatedBitmap, getLastOrientation(mLastOrientation));
-
-                File pictureFile = getOutputMediaFile();
-                if (pictureFile == null) {
-                    return;
-                }
-                try {
-                    FileOutputStream fos = new FileOutputStream(pictureFile);
-
-                    if (rotatedBitmap != null)
-                        rotatedBitmap.compress(Bitmap.CompressFormat.JPEG, 95, fos);
-                    else
-                        bitmap.compress(Bitmap.CompressFormat.JPEG, 95, fos);
-
-                    fos.close();
-                } catch (FileNotFoundException e) {
-                    e.printStackTrace();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                } finally {
-                    LOG.d("File path : " + pictureFile.getAbsolutePath());
-
-                    try {
-                        // TODO: recycle Bitmap!!!
-                        if (rotatedBitmap != null) {
-                            rotatedBitmap.recycle();
-                            rotatedBitmap = null;
-                        } else {
-                            bitmap.recycle();
-                            bitmap = null;
-                        }
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-
-                    if (onTakePictureListener != null && pictureFile != null)
-                        onTakePictureListener.onTakePicture(pictureFile);
-
-                    // remove mPreviewFrame
-                    mPreviewFrame = null;
-                }
             } else {
                 captureStillPicture();
             }
         } catch (Exception e){
             captureStillPicture();
+        }
+    }
+
+    private void recreateToFile(Bitmap bitmap) {
+
+        // Daniel (2016-08-26 14:01:20): Current Device rotation
+        WindowManager windowManager = (WindowManager) getContext().getSystemService(Context.WINDOW_SERVICE);
+        int displayRotation = windowManager.getDefaultDisplay().getRotation();
+        LOG.d("Current device rotation : " + ORIENTATIONS.get(displayRotation));
+
+        int result = (mSensorOrientation - ORIENTATIONS.get(displayRotation) + 360) % 360;
+
+        Bitmap rotatedBitmap = null;
+
+        if (result % 360 != 0) {
+            rotatedBitmap = rotateImage(bitmap, result);
+            rotatedBitmap = cropImage(rotatedBitmap);
+        } else {
+            rotatedBitmap = cropImage(bitmap);
+        }
+
+        if (getLastOrientation(mLastOrientation) % 360 != 0)
+            rotatedBitmap = rotateImage(rotatedBitmap, getLastOrientation(mLastOrientation));
+
+        File pictureFile = getOutputMediaFile();
+        if (pictureFile == null) {
+            return;
+        }
+        try {
+            FileOutputStream fos = new FileOutputStream(pictureFile);
+
+            if (rotatedBitmap != null)
+                rotatedBitmap.compress(Bitmap.CompressFormat.JPEG, 95, fos);
+            else
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 95, fos);
+
+            fos.close();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            LOG.d("File path : " + pictureFile.getAbsolutePath());
+
+            try {
+                // TODO: recycle Bitmap!!!
+                if (rotatedBitmap != null) {
+                    rotatedBitmap.recycle();
+                    rotatedBitmap = null;
+                } else {
+                    bitmap.recycle();
+                    bitmap = null;
+                }
+            } catch (Exception e){
+                e.printStackTrace();
+            }
+
+            if (onTakePictureListener != null && pictureFile != null)
+                onTakePictureListener.onTakePicture(pictureFile);
         }
     }
 
