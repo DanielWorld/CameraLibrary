@@ -1046,6 +1046,9 @@ public class CameraPreview extends AutoFitTextureView{
         if (getLastOrientation(mLastOrientation) % 360 != 0)
             rotatedBitmap = rotateImage(rotatedBitmap, getLastOrientation(mLastOrientation));
 
+        // TODO: There is issue with reverse left and right.. sorry. Execute this logic at the last moment.
+        rotatedBitmap = reverseSides(rotatedBitmap);
+
         File pictureFile = getOutputMediaFile();
         if (pictureFile == null) {
             return;
@@ -1219,6 +1222,20 @@ public class CameraPreview extends AutoFitTextureView{
 
         Matrix matrix = new Matrix();
         matrix.postRotate(degrees);
+
+        Bitmap rotatedBitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
+        // TODO: Check if it is okay to recycle!!
+        if (bitmap != null && bitmap != rotatedBitmap && !bitmap.isRecycled())
+            bitmap.recycle();
+
+        return rotatedBitmap;
+    }
+
+    private Bitmap reverseSides(Bitmap bitmap) {
+        if (bitmap == null) return bitmap;
+
+        Matrix matrix = new Matrix();
+        matrix.postScale(-1, 1);
 
         Bitmap rotatedBitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
         // TODO: Check if it is okay to recycle!!
