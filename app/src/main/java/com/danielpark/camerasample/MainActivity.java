@@ -17,14 +17,13 @@ import android.view.View;
 import android.widget.Toast;
 
 import com.danielpark.camera.CameraApiChecker;
-import com.danielpark.camera.listeners.OnTakePictureListener;
+import com.danielpark.camera.listeners.OnCameraPreviewListener;
 import com.danielpark.camera.util.AutoFitTextureView;
 import com.danielpark.camera.util.CameraLogger;
 import com.danielpark.camerasample.databinding.ActivityMainBinding;
 
 import net.danielpark.library.dialog.DialogInput;
 import net.danielpark.library.dialog.DialogUtil;
-import net.danielpark.library.log.Logger;
 import net.danielpark.library.util.PermissionChecker;
 
 import java.io.File;
@@ -32,7 +31,7 @@ import java.io.IOException;
 import java.util.Timer;
 import java.util.TimerTask;
 
-public class MainActivity extends AppCompatActivity implements View.OnClickListener, OnTakePictureListener, PermissionChecker.OnPermissionCheckerListener {
+public class MainActivity extends AppCompatActivity implements View.OnClickListener, OnCameraPreviewListener, PermissionChecker.OnPermissionCheckerListener {
 
     private AutoFitTextureView cameraPreview;
     private PermissionChecker permissionChecker;
@@ -76,7 +75,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             /**
              * Daniel (2016-11-05 18:42:58): It is required to listen taking a picture event, and auto-focus event
              */
-            cameraPreview.setOnTakePictureListener(this);
+            cameraPreview.setOnCameraPreviewListener(this);
 
             cameraPreview.setOnTouchListener(new View.OnTouchListener() {
                 @Override

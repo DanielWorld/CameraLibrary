@@ -21,7 +21,7 @@ import android.view.Surface;
 import android.view.TextureView;
 import android.view.WindowManager;
 
-import com.danielpark.camera.listeners.OnTakePictureListener;
+import com.danielpark.camera.listeners.OnCameraPreviewListener;
 import com.danielpark.camera.util.AutoFitTextureView;
 import com.danielpark.camera.util.DeviceUtil;
 
@@ -58,7 +58,7 @@ public class CameraPreview extends AutoFitTextureView{
     private int mLastOrientation;
     /** Display rotation */
     private int mDisplayRotation;
-    private OnTakePictureListener onTakePictureListener;
+    private OnCameraPreviewListener onCameraPreviewListener;
     private OrientationEventListener mOrientationEventListener;
 
     /**
@@ -772,16 +772,16 @@ public class CameraPreview extends AutoFitTextureView{
                     public void onAutoFocus(boolean success, Camera camera) {
                         LOG.d("onAutoFocus() : " + success);
 
-                        if (onTakePictureListener != null)
-                            onTakePictureListener.onLensFocused(success);
+                        if (onCameraPreviewListener != null)
+                            onCameraPreviewListener.onLensFocused(success);
                     }
                 });
             } catch (RuntimeException e){
                 e.printStackTrace();
                 // Daniel (2016-11-10 00:53:01): Usually, it happens on some freak devices
                 // return auto focus failure result
-                if (onTakePictureListener != null)
-                    onTakePictureListener.onLensFocused(false);
+                if (onCameraPreviewListener != null)
+                    onCameraPreviewListener.onLensFocused(false);
             }
         }
     }
@@ -1050,8 +1050,8 @@ public class CameraPreview extends AutoFitTextureView{
                 e.printStackTrace();
             }
 
-            if (onTakePictureListener != null && pictureFile != null)
-                onTakePictureListener.onTakePicture(pictureFile);
+            if (onCameraPreviewListener != null && pictureFile != null)
+                onCameraPreviewListener.onTakePicture(pictureFile);
         }
     }
 
@@ -1130,8 +1130,8 @@ public class CameraPreview extends AutoFitTextureView{
     }
 
     @Override
-    public void setOnTakePictureListener(OnTakePictureListener listener) {
-        onTakePictureListener = listener;
+    public void setOnCameraPreviewListener(OnCameraPreviewListener listener) {
+        onCameraPreviewListener = listener;
     }
 
     /**
@@ -1164,7 +1164,7 @@ public class CameraPreview extends AutoFitTextureView{
             mOrientationEventListener = null;
         }
 
-		onTakePictureListener = null;
+		onCameraPreviewListener = null;
 
         if (mCamera != null) {
 			mCamera.setPreviewCallback(null);

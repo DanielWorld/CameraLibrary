@@ -36,7 +36,7 @@ import android.view.Surface;
 import android.view.TextureView;
 import android.view.WindowManager;
 
-import com.danielpark.camera.listeners.OnTakePictureListener;
+import com.danielpark.camera.listeners.OnCameraPreviewListener;
 import com.danielpark.camera.util.AutoFitTextureView;
 import com.danielpark.camera.util.DeviceUtil;
 import com.danielpark.camera.util.Logger;
@@ -117,7 +117,7 @@ public class Camera2Preview extends AutoFitTextureView {
     /** Last changed orientation */
     private int mLastOrientation;
     private Integer mLastConvertedOrientation;
-    private OnTakePictureListener onTakePictureListener;
+    private OnCameraPreviewListener onCameraPreviewListener;
     private OrientationEventListener mOrientationEventListener;
 
     private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
@@ -212,18 +212,18 @@ public class Camera2Preview extends AutoFitTextureView {
 
             switch (msg.what) {
                 case DELIVER_LENS_FOCUS_SUCCEED: {
-                    if (onTakePictureListener != null)
-                        onTakePictureListener.onLensFocused(true);
+                    if (onCameraPreviewListener != null)
+                        onCameraPreviewListener.onLensFocused(true);
                     break;
                 }
                 case DELIVER_LENS_FOCUS_FAILED: {
-                    if (onTakePictureListener != null)
-                        onTakePictureListener.onLensFocused(false);
+                    if (onCameraPreviewListener != null)
+                        onCameraPreviewListener.onLensFocused(false);
                     break;
                 }
                 case DELIVER_FINISHED_TAKING_PICTURE: {
-                    if (onTakePictureListener != null && mTakePictureFile != null)
-                        onTakePictureListener.onTakePicture(mTakePictureFile);
+                    if (onCameraPreviewListener != null && mTakePictureFile != null)
+                        onCameraPreviewListener.onTakePicture(mTakePictureFile);
                     break;
                 }
             }
@@ -1057,8 +1057,8 @@ public class Camera2Preview extends AutoFitTextureView {
     }
 
     @Override
-    public void setOnTakePictureListener(OnTakePictureListener onTakePictureListener) {
-        this.onTakePictureListener = onTakePictureListener;
+    public void setOnCameraPreviewListener(OnCameraPreviewListener onCameraPreviewListener) {
+        this.onCameraPreviewListener = onCameraPreviewListener;
     }
 
     /**

@@ -8,8 +8,7 @@ import android.hardware.camera2.CameraAccessException;
 import android.util.AttributeSet;
 import android.view.TextureView;
 
-import com.danielpark.camera.listeners.ControlInterface;
-import com.danielpark.camera.listeners.OnTakePictureListener;
+import com.danielpark.camera.listeners.OnCameraPreviewListener;
 
 /**
  * A {@link TextureView} that can be adjusted to a specified aspect ratio.
@@ -90,7 +89,7 @@ public abstract class AutoFitTextureView extends TextureView {
 
     public abstract boolean supportFlash();
 
-    public abstract void setOnTakePictureListener(OnTakePictureListener listener);
+    public abstract void setOnCameraPreviewListener(OnCameraPreviewListener listener);
 
     public abstract void releaseCamera();
 
