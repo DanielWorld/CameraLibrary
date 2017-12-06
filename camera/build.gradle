@@ -19,7 +19,7 @@ publish {
     userOrg = 'danielworld'
     groupId = 'com.danielworld'
     artifactId = 'camera-library'
-    publishVersion = '1.1.5'
+    publishVersion = '1.1.6'
     desc = 'A camera library which supports Camera API and Camera2 API in Android Application'
     website = 'https://github.com/DanielWorld/CameraLibrary'
     issueTracker = "${website}/issues"
@@ -34,7 +34,7 @@ android {
         minSdkVersion 15
         targetSdkVersion 25
         versionCode 1
-        versionName "1.1.5"
+        versionName "1.1.6"
         consumerProguardFiles 'proguard-rules.pro'
     }
     buildTypes {
@@ -52,5 +52,4 @@ android {
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
     testCompile 'junit:junit:4.12'
-//    compile 'com.android.support:appcompat-v7:25.3.0'
 }
