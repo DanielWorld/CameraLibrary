@@ -871,7 +871,6 @@ public class Camera2Preview extends AutoFitTextureView {
 
     @Override
     public void autoFocus() {
-        super.autoFocus();
             // Start AF trigger
 //            mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER,
 //                    CameraMetadata.CONTROL_AF_TRIGGER_START);
@@ -879,6 +878,11 @@ public class Camera2Preview extends AutoFitTextureView {
 //            mCameraCaptureSession.capture(mPreviewRequestBuilder.build(), null, null);
 
             lockFocus();
+    }
+
+    @Override
+    public Bitmap getThumbnail(float ratio) {
+        return null;
     }
 
     /**
@@ -972,8 +976,6 @@ public class Camera2Preview extends AutoFitTextureView {
 
     @Override
     public void takePicture() {
-        super.takePicture();
-
         captureStillPicture();
     }
 
@@ -1023,8 +1025,6 @@ public class Camera2Preview extends AutoFitTextureView {
 
     @Override
     public void flashToggle() {
-        super.flashToggle();
-
         LOG.d("flashTorch()");
 
         if (mCameraCharacteristics != null) {
@@ -1051,14 +1051,17 @@ public class Camera2Preview extends AutoFitTextureView {
     }
 
     @Override
+    public boolean supportFlash() {
+        return false;
+    }
+
+    @Override
     public void setOnTakePictureListener(OnTakePictureListener onTakePictureListener) {
         this.onTakePictureListener = onTakePictureListener;
     }
 
     @Override
     public void setOrientationEventListener(boolean isEnabled) {
-        super.setOrientationEventListener(isEnabled);
-
         isOrientationEventAvailable = isEnabled;
 
         if (isEnabled) {
@@ -1107,8 +1110,6 @@ public class Camera2Preview extends AutoFitTextureView {
 
     @Override
     public void finishCamera() {
-        super.finishCamera();
-
         if (mOrientationEventListener != null) {
             mOrientationEventListener.disable();
             mOrientationEventListener = null;

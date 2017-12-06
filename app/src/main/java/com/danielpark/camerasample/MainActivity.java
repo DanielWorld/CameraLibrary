@@ -4,6 +4,7 @@ import android.Manifest;
 import android.annotation.TargetApi;
 import android.content.Intent;
 import android.databinding.DataBindingUtil;
+import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Build;
@@ -28,6 +29,8 @@ import net.danielpark.library.util.PermissionChecker;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener, OnTakePictureListener, PermissionChecker.OnPermissionCheckerListener {
     private final String TAG = MainActivity.class.getSimpleName();
@@ -96,6 +99,21 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
             finish();
         }
+
+        new Timer().scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                Bitmap bitmap = cameraPreview.getThumbnail(0.7f);
+
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        binding.thumbnail.setImageBitmap(bitmap);
+                    }
+                });
+
+            }
+        }, 5000, 300);
     }
 
     @Override

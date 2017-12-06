@@ -808,7 +808,6 @@ public class CameraPreview extends AutoFitTextureView{
 
     @Override
     public void autoFocus() {
-        super.autoFocus();
         if (mCamera != null) {
             try {
                 mCamera.autoFocus(new Camera.AutoFocusCallback() {
@@ -828,6 +827,22 @@ public class CameraPreview extends AutoFitTextureView{
                     onTakePictureListener.onLensFocused(false);
             }
         }
+    }
+
+    @Override
+    public Bitmap getThumbnail(float ratio) {
+        if (ratio <= 0f || ratio > 1.0f) {
+            ratio = 0.3f;
+        }
+
+        float width = (float) getWidth() * ratio;
+        float height = (float) getHeight() * ratio;
+
+        Bitmap bitmap = super.getBitmap((int) width, (int) height);
+        // TODO: Don't forget to recycle previous bitmap!
+        bitmap = Bitmap.createBitmap(bitmap, 0, 0 ,bitmap.getWidth(), bitmap.getHeight(), getTransform(null), true);
+
+        return bitmap;
     }
 
     /**
@@ -921,7 +936,6 @@ public class CameraPreview extends AutoFitTextureView{
 
     @Override
     public void takePicture() {
-        super.takePicture();
 
         // Daniel (2016-11-03 16:12:52): Start taking picture
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
@@ -1097,8 +1111,6 @@ public class CameraPreview extends AutoFitTextureView{
 
     @Override
     public void flashToggle() {
-        super.flashToggle();
-
         LOG.d("flashTorch()");
 
         if (mCamera != null) {
@@ -1145,8 +1157,6 @@ public class CameraPreview extends AutoFitTextureView{
 
     @Override
     public void setOrientationEventListener(boolean isEnabled) {
-        super.setOrientationEventListener(isEnabled);
-
         isOrientationEventAvailable = isEnabled;
 
         if (isEnabled) {
@@ -1199,8 +1209,6 @@ public class CameraPreview extends AutoFitTextureView{
 
     @Override
     public void finishCamera() {
-        super.finishCamera();
-
         if (mOrientationEventListener != null) {
             mOrientationEventListener.disable();
             mOrientationEventListener = null;

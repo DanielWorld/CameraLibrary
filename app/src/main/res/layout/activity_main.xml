@@ -81,5 +81,11 @@
             android:layout_alignParentRight="true"
             android:background="@android:color/black" />
 
+        <ImageView
+            android:id="@+id/thumbnail"
+            android:layout_width="140dp"
+            android:layout_height="wrap_content"
+            android:adjustViewBounds="true"/>
+
     </RelativeLayout>
 </layout>

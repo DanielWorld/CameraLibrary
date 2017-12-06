@@ -1,6 +1,7 @@
 package com.danielpark.camera.util;
 
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraAccessException;
 //import android.support.annotation.CallSuper;
@@ -16,7 +17,7 @@ import com.danielpark.camera.listeners.OnTakePictureListener;
  * Copyright (C) 2014-2016 daniel@bapul.net
  * Created by Daniel on 2016-08-23.
  */
-public class AutoFitTextureView extends TextureView implements ControlInterface{
+public abstract class AutoFitTextureView extends TextureView {
 
     protected Logger LOG = Logger.getInstance();
 
@@ -71,51 +72,29 @@ public class AutoFitTextureView extends TextureView implements ControlInterface{
         }
     }
 
-    @Override
-    public void openCamera(SurfaceTexture surfaceTexture, int width, int height) throws CameraAccessException {
+    public abstract void openCamera(SurfaceTexture surfaceTexture, int width, int height) throws CameraAccessException;
 
-    }
+    public abstract void autoFocus();
 
-    @Override
-    public void autoFocus() {
+    /**
+     * Get bitmap from Background thread! <br>
+     *     Unlike {@link #takePicture()},
+     * @param ratio
+     * @return
+     */
+    public abstract Bitmap getThumbnail(float ratio);
 
-    }
+    public abstract void takePicture();
 
-//    @CallSuper
-    @Override
-    public void takePicture() {
+    public abstract void flashToggle();
 
-    }
+    public abstract boolean supportFlash();
 
-//    @CallSuper
-    @Override
-    public void flashToggle() {
+    public abstract void setOnTakePictureListener(OnTakePictureListener listener);
 
-    }
+    public abstract void setOrientationEventListener(boolean isEnabled);
 
-    @Override
-    public boolean supportFlash() {
-        return false;
-    }
+    public abstract void releaseCamera();
 
-    @Override
-    public void setOnTakePictureListener(OnTakePictureListener listener) {
-
-    }
-
-    @Override
-    public void setOrientationEventListener(boolean isEnabled) {
-
-    }
-
-    @Override
-    public void releaseCamera() {
-
-    }
-
-//    @CallSuper
-    @Override
-    public void finishCamera() {
-
-    }
+    public abstract void finishCamera();
 }

@@ -36,10 +36,11 @@ android {
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
     testCompile 'junit:junit:4.12'
-    compile 'com.danielworld:camera-library:1.1.5'
 
     compile('com.danielworld:android-library:2.0.1@aar') {
         transitive = true
     }
-//    compile project(':camera')
+
+//    compile 'com.danielworld:camera-library:1.1.5'
+    compile project(':camera')
 }
