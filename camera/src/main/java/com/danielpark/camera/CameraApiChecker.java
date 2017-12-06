@@ -40,7 +40,7 @@ public class CameraApiChecker {
         return sThis;
     }
 
-    private CameraOrientation orientationMode = CameraOrientation.None;    // None : means nothing happen!
+    private CameraOrientation orientationMode = CameraOrientation.AutoSet;    // None : means nothing happen!
     private int cameraType = Camera.CameraInfo.CAMERA_FACING_BACK;
 
     /**
@@ -76,7 +76,7 @@ public class CameraApiChecker {
     }
 
     public enum CameraOrientation {
-        Portrait, Landscape, AutoSet, None
+        Portrait, Landscape, AutoSet
     }
 
 

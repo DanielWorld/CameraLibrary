@@ -92,8 +92,6 @@ public abstract class AutoFitTextureView extends TextureView {
 
     public abstract void setOnTakePictureListener(OnTakePictureListener listener);
 
-    public abstract void setOrientationEventListener(boolean isEnabled);
-
     public abstract void releaseCamera();
 
     public abstract void finishCamera();

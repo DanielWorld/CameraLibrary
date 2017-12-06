@@ -133,6 +133,7 @@ public class Camera2Preview extends AutoFitTextureView {
         super(context);
 
         setSurfaceTextureListener(mSurfaceTextureListener);
+        setOrientationEventListener(true);
     }
 
     private final TextureView.SurfaceTextureListener mSurfaceTextureListener
@@ -1060,35 +1061,6 @@ public class Camera2Preview extends AutoFitTextureView {
         this.onTakePictureListener = onTakePictureListener;
     }
 
-    @Override
-    public void setOrientationEventListener(boolean isEnabled) {
-        isOrientationEventAvailable = isEnabled;
-
-        if (isEnabled) {
-            if (mOrientationEventListener == null) {
-                mOrientationEventListener = new OrientationEventListener(getContext(),
-                        SensorManager.SENSOR_DELAY_NORMAL) {
-                    @Override
-                    public void onOrientationChanged(int orientation) {
-//                        LOG.d("Orientation : " + orientation);
-                        if (orientation != -1)
-                            mLastOrientation = orientation;
-                    }
-                };
-            }
-
-            if (mOrientationEventListener != null && mOrientationEventListener.canDetectOrientation())
-                mOrientationEventListener.enable();
-        } else {
-            if (mOrientationEventListener != null) {
-                mOrientationEventListener.disable();
-                mOrientationEventListener = null;
-            }
-
-            mLastOrientation = 0;
-        }
-    }
-
     /**
      * You must call this method to release Camera
      */
@@ -1121,6 +1093,34 @@ public class Camera2Preview extends AutoFitTextureView {
             stopBackgroundThread();
         } catch (Exception e){
             e.printStackTrace();
+        }
+    }
+
+    private void setOrientationEventListener(boolean isEnabled) {
+        isOrientationEventAvailable = isEnabled;
+
+        if (isEnabled) {
+            if (mOrientationEventListener == null) {
+                mOrientationEventListener = new OrientationEventListener(getContext(),
+                        SensorManager.SENSOR_DELAY_NORMAL) {
+                    @Override
+                    public void onOrientationChanged(int orientation) {
+//                        LOG.d("Orientation : " + orientation);
+                        if (orientation != -1)
+                            mLastOrientation = orientation;
+                    }
+                };
+            }
+
+            if (mOrientationEventListener != null && mOrientationEventListener.canDetectOrientation())
+                mOrientationEventListener.enable();
+        } else {
+            if (mOrientationEventListener != null) {
+                mOrientationEventListener.disable();
+                mOrientationEventListener = null;
+            }
+
+            mLastOrientation = 0;
         }
     }
 

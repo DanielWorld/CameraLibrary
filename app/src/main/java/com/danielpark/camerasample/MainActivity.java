@@ -40,6 +40,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private ActivityMainBinding binding;
 
+    private Timer timer;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -77,7 +79,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
              * Daniel (2016-11-05 18:42:58): It is required to listen taking a picture event, and auto-focus event
              */
             cameraPreview.setOnTakePictureListener(this);
-            cameraPreview.setOrientationEventListener(true);
 
             cameraPreview.setOnTouchListener(new View.OnTouchListener() {
                 @Override
@@ -100,7 +101,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             finish();
         }
 
-        new Timer().scheduleAtFixedRate(new TimerTask() {
+        timer = new Timer();
+        timer.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
                 Bitmap bitmap = cameraPreview.getThumbnail(0.7f);
@@ -108,7 +110,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        binding.thumbnail.setImageBitmap(bitmap);
+                        if (bitmap != null)
+                            binding.thumbnail.setImageBitmap(bitmap);
                     }
                 });
 
@@ -205,6 +208,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         if (cameraPreview != null)
             cameraPreview.finishCamera();
+
+        if (timer != null)
+            timer.cancel();
 
         super.onDestroy();
     }

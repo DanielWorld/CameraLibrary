@@ -52,12 +52,19 @@ public class CameraPreview extends AutoFitTextureView{
     /** the lastest view size */
     private PointF mLatestViewSize = new PointF();
 
-    /** Orientation event flag */
-    private boolean isOrientationEventAvailable = false;
+    private byte[] mPreviewFrame;
+
     /** Last changed orientation */
     private int mLastOrientation;
+    /** Display rotation */
+    private int mDisplayRotation;
     private OnTakePictureListener onTakePictureListener;
     private OrientationEventListener mOrientationEventListener;
+
+    /**
+     * Save offset of preview size to take picture with correct aspect ratio
+     */
+    RectF mConfigureTransformMargin = new RectF();
 
     /**
      * Camera lens type : <br>
@@ -88,6 +95,7 @@ public class CameraPreview extends AutoFitTextureView{
             mFacingFrontRotateDegree = 0;
 
         setSurfaceTextureListener(mSurfaceTextureListener);
+        setOrientationEventListener(true);
     }
 
     private final TextureView.SurfaceTextureListener mSurfaceTextureListener
@@ -222,53 +230,23 @@ public class CameraPreview extends AutoFitTextureView{
 
         // 4. Get current display rotation
         WindowManager windowManager = (WindowManager) getContext().getSystemService(Context.WINDOW_SERVICE);
-        int displayRotation = windowManager.getDefaultDisplay().getRotation();
-        LOG.d("4. Current device rotation : " + ORIENTATIONS.get(displayRotation));
+        mDisplayRotation = windowManager.getDefaultDisplay().getRotation();
+        LOG.d("4. Current device rotation : " + ORIENTATIONS.get(mDisplayRotation));
 
-        // 5. Check if dimensions should be swapped
-        boolean swappedDimensions = false;
-        switch (displayRotation) {
-            case Surface.ROTATION_0:
-            case Surface.ROTATION_180:
-                if (mSensorOrientation == 90 || mSensorOrientation == 270) {
-                    swappedDimensions = true;
-                }
-                break;
-            case Surface.ROTATION_90:
-            case Surface.ROTATION_270:
-                if (mSensorOrientation == 0 || mSensorOrientation == 180) {
-                    swappedDimensions = true;
-                }
-                break;
-        }
-        LOG.d("5. is Dimension swapped? : " + swappedDimensions);
-
-        // 6. Get device resolution max size
+        // 5. Get device resolution max size
         Point resolutionSize = new Point();
         windowManager.getDefaultDisplay().getSize(resolutionSize);
+        LOG.d("5. Resolution Size : " + resolutionSize.x + " , " + resolutionSize.y);
 
-        int rotatedPreviewWidth = width;
-        int rotatedPreviewHeight = height;
-        int maxPreviewWidth = resolutionSize.x;
-        int maxPreviewHeight = resolutionSize.y;
-
-        if (swappedDimensions) {
-            rotatedPreviewWidth = height;
-            rotatedPreviewHeight = width;
-            maxPreviewWidth = resolutionSize.y;
-            maxPreviewHeight = resolutionSize.x;
-        }
-        LOG.d("6. Resolution Size : " + resolutionSize.x + " , " + resolutionSize.y);
-
-        // 7. choose Optimal preview size!
+        // 6. choose Optimal preview size!
         // Daniel (2016-11-05 13:59:19): : use the largest preview size for better quality
 //        mPreviewSize = largestPreviewSize;
         // TODO: No need to add largest preview, because view size could be small
         mPreviewSize = chooseOptimalSize(mCamera.getParameters().getSupportedPreviewSizes(),
                 width, height, largestPreviewSize.width, largestPreviewSize.height);
-        LOG.d("7. Optimal Preview size : " + mPreviewSize.width + " , " + mPreviewSize.height);
+        LOG.d("6. Optimal Preview size : " + mPreviewSize.width + " , " + mPreviewSize.height);
 
-        // 8. choose Optimal Picture size!
+        // 7. choose Optimal Picture size!
         mPictureSize = chooseOptimalSize(mCamera.getParameters().getSupportedPictureSizes(),
                 largestPreviewSize.width, largestPreviewSize.height, largestPreviewSize.width, largestPreviewSize.height,
                 largestPreviewSize);
@@ -280,19 +258,7 @@ public class CameraPreview extends AutoFitTextureView{
         }
 
         // Daniel (2016-11-04 12:18:33): Picture size should be equal or better than the largest preview size
-        LOG.d("8. Optimal Picture size : " + mPictureSize.width + " , " + mPictureSize.height);
-
-        // 9. According to orientation, change SurfaceView size
-        int orientation = getResources().getConfiguration().orientation;
-        if (orientation == Configuration.ORIENTATION_PORTRAIT) {
-            LOG.d("9. Orientation PORTRAIT");
-//            setAspectRatio(
-//                    mPreviewSize.height, mPreviewSize.width);
-        } else if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
-            LOG.d("9. Orientation LANDSCAPE");
-//            setAspectRatio(
-//                    mPreviewSize.width, mPreviewSize.height);
-        }
+        LOG.d("7. Optimal Picture size : " + mPictureSize.width + " , " + mPictureSize.height);
 
         // Daniel (2016-11-09 15:52:55): try to disable shutter sound
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
@@ -302,22 +268,7 @@ public class CameraPreview extends AutoFitTextureView{
                 return;
             }
         }
-
-        // Daniel (2016-11-09 15:55:29): Device can't disable shutter sound
-        mCamera.setPreviewCallback(new Camera.PreviewCallback() {
-            @Override
-            public void onPreviewFrame(byte[] data, Camera camera) {
-                mPreviewFrame = data;
-            }
-        });
     }
-
-    private byte[] mPreviewFrame;
-
-    /**
-     * Save offset of preview size to take picture with correct aspect ratio
-     */
-    RectF mConfigureTransformMargin = new RectF();
 
     /**
      * Initialize transform margin
@@ -367,13 +318,15 @@ public class CameraPreview extends AutoFitTextureView{
                 return;
             }
             WindowManager windowManager = (WindowManager) getContext().getSystemService(Context.WINDOW_SERVICE);
-            int rotation = windowManager.getDefaultDisplay().getRotation();
+            mDisplayRotation = windowManager.getDefaultDisplay().getRotation();
+            final int rotation = mDisplayRotation;
+
             Matrix matrix = new Matrix();
             RectF viewRect = new RectF(0, 0, viewWidth, viewHeight);
             RectF bufferRect = new RectF(0, 0, mPreviewSize.width, mPreviewSize.height);
             float centerX = viewRect.centerX();
             float centerY = viewRect.centerY();
-            LOG.d("Surface rotation : " + ORIENTATIONS.get(rotation));
+            LOG.d("Surface rotation : " + ORIENTATIONS.get(mDisplayRotation));
             LOG.d("Correct Ratio Orientation : " + isCorrectRatioOrientation());
             LOG.d("Sensor orientation : " + mSensorOrientation);
 
@@ -835,14 +788,20 @@ public class CameraPreview extends AutoFitTextureView{
             ratio = 0.3f;
         }
 
-        float width = (float) getWidth() * ratio;
-        float height = (float) getHeight() * ratio;
+        try {
+            float width = (float) getWidth() * ratio;
+            float height = (float) getHeight() * ratio;
 
-        Bitmap bitmap = super.getBitmap((int) width, (int) height);
-        // TODO: Don't forget to recycle previous bitmap!
-        bitmap = Bitmap.createBitmap(bitmap, 0, 0 ,bitmap.getWidth(), bitmap.getHeight(), getTransform(null), true);
+            Bitmap bitmap = super.getBitmap((int) width, (int) height);
+            // TODO: Don't forget to recycle previous bitmap!
+            bitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), getTransform(null), true);
 
-        return bitmap;
+            return reCalculateBitmap(bitmap, true);
+        } catch (Exception e) {
+            e.printStackTrace();
+
+            return null;
+        }
     }
 
     /**
@@ -850,11 +809,8 @@ public class CameraPreview extends AutoFitTextureView{
      * @param mLastOrientation
      * @return
      */
-    private int getLastOrientation(int mLastOrientation) {
-        if (!isOrientationEventAvailable) return 0;
-
-        WindowManager windowManager = (WindowManager) getContext().getSystemService(Context.WINDOW_SERVICE);
-        int rotation = windowManager.getDefaultDisplay().getRotation();
+    private int getLastOrientation(int mLastOrientation, boolean isThumbnail) {
+        int rotation = mDisplayRotation;
 
         int orientation = getResources().getConfiguration().orientation;
 
@@ -862,44 +818,61 @@ public class CameraPreview extends AutoFitTextureView{
 
             if (orientation == Configuration.ORIENTATION_PORTRAIT) {
 
-                if (rotation == Surface.ROTATION_0 || rotation == Surface.ROTATION_180) {
-                    if (mLastOrientation >= 45 && mLastOrientation <= 90 + 45)
-                        return 90;
-                    else if (mLastOrientation >= 90 + 45 && mLastOrientation <= 90 * 2 + 45)
-                        return 180;
-                    else if (mLastOrientation >= 90 * 2 + 45 && mLastOrientation <= 90 * 3 + 45)
+                if (isThumbnail) {
+                    // TODO: Need more test cases..
+                    // Daniel (2017-12-06 14:58:16) : No need to set specific degrees. for now...
+                    if (rotation == Surface.ROTATION_0) {
                         return 270;
-                    return 0;
+                    }
                 }
                 else {
-                    if (mLastOrientation >= 45 && mLastOrientation <= 90 + 45)
+
+                    if (rotation == Surface.ROTATION_0 || rotation == Surface.ROTATION_180) {
+                        if (mLastOrientation >= 45 && mLastOrientation <= 90 + 45)
+                            return 90;
+                        else if (mLastOrientation >= 90 + 45 && mLastOrientation <= 90 * 2 + 45)
+                            return 180;
+                        else if (mLastOrientation >= 90 * 2 + 45 && mLastOrientation <= 90 * 3 + 45)
+                            return 270;
                         return 0;
-                    else if (mLastOrientation >= 90 + 45 && mLastOrientation <= 90 * 2 + 45)
-                        return 90;
-                    else if (mLastOrientation >= 90 * 2 + 45 && mLastOrientation <= 90 * 3 + 45)
-                        return 180;
-                    return 270;
+                    } else {
+                        if (mLastOrientation >= 45 && mLastOrientation <= 90 + 45)
+                            return 0;
+                        else if (mLastOrientation >= 90 + 45 && mLastOrientation <= 90 * 2 + 45)
+                            return 90;
+                        else if (mLastOrientation >= 90 * 2 + 45 && mLastOrientation <= 90 * 3 + 45)
+                            return 180;
+                        return 270;
+                    }
                 }
             }
             else if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
 
-                if (rotation == Surface.ROTATION_0 || rotation == Surface.ROTATION_180) {
-                    if (mLastOrientation >= 45 && mLastOrientation <= 90 + 45)
-                        return 90;
-                    else if (mLastOrientation >= 90 + 45 && mLastOrientation <= 90 * 2 + 45)
-                        return 180;
-                    else if (mLastOrientation >= 90 * 2 + 45 && mLastOrientation <= 90 * 3 + 45)
-                        return 270;
-                    return 0;
-                }
-                else {
-                    if (mLastOrientation >= 45 && mLastOrientation <= 90 + 45)
-                        return 180;
-                    else if (mLastOrientation >= 90 + 45 && mLastOrientation <= 90 * 2 + 45)
-                        return 270;
-                    else if (mLastOrientation >= 90 * 2 + 45 && mLastOrientation <= 90 * 3 + 45)
+                if (isThumbnail) {
+                    // TODO: Need more test cases..
+                    // Daniel (2017-12-06 14:58:16) : No need to set specific degrees. for now...
+                    if (rotation == Surface.ROTATION_0) {
                         return 0;
-                    return 90;
+                    }
+                } else {
+
+                    if (rotation == Surface.ROTATION_0 || rotation == Surface.ROTATION_180) {
+                        if (mLastOrientation >= 45 && mLastOrientation <= 90 + 45)
+                            return 90;
+                        else if (mLastOrientation >= 90 + 45 && mLastOrientation <= 90 * 2 + 45)
+                            return 180;
+                        else if (mLastOrientation >= 90 * 2 + 45 && mLastOrientation <= 90 * 3 + 45)
+                            return 270;
+                        return 0;
+                    } else {
+                        if (mLastOrientation >= 45 && mLastOrientation <= 90 + 45)
+                            return 180;
+                        else if (mLastOrientation >= 90 + 45 && mLastOrientation <= 90 * 2 + 45)
+                            return 270;
+                        else if (mLastOrientation >= 90 * 2 + 45 && mLastOrientation <= 90 * 3 + 45)
+                            return 0;
+                        return 90;
+                    }
                 }
             }
         }
@@ -910,23 +883,29 @@ public class CameraPreview extends AutoFitTextureView{
             }
             else if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
 
-                if (rotation == Surface.ROTATION_0 || rotation == Surface.ROTATION_180) {
-                    if (mLastOrientation >= 45 && mLastOrientation <= 90 + 45)
-                        return 90;
-                    else if (mLastOrientation >= 90 + 45 && mLastOrientation <= 90 * 2 + 45)
+                if (isThumbnail) {
+                    if (rotation == Surface.ROTATION_90) {
                         return 180;
-                    else if (mLastOrientation >= 90 * 2 + 45 && mLastOrientation <= 90 * 3 + 45)
-                        return 270;
-                    return 0;
+                    }
                 }
                 else {
-                    if (mLastOrientation >= 45 && mLastOrientation <= 90 + 45)
+                    if (rotation == Surface.ROTATION_0 || rotation == Surface.ROTATION_180) {
+                        if (mLastOrientation >= 45 && mLastOrientation <= 90 + 45)
+                            return 90;
+                        else if (mLastOrientation >= 90 + 45 && mLastOrientation <= 90 * 2 + 45)
+                            return 180;
+                        else if (mLastOrientation >= 90 * 2 + 45 && mLastOrientation <= 90 * 3 + 45)
+                            return 270;
                         return 0;
-                    else if (mLastOrientation >= 90 + 45 && mLastOrientation <= 90 * 2 + 45)
-                        return 270;
-                    else if (mLastOrientation >= 90 * 2 + 45 && mLastOrientation <= 90 * 3 + 45)
-                        return 180;
-                    return 90;
+                    } else {
+                        if (mLastOrientation >= 45 && mLastOrientation <= 90 + 45)
+                            return 0;
+                        else if (mLastOrientation >= 90 + 45 && mLastOrientation <= 90 * 2 + 45)
+                            return 270;
+                        else if (mLastOrientation >= 90 * 2 + 45 && mLastOrientation <= 90 * 3 + 45)
+                            return 180;
+                        return 90;
+                    }
                 }
             }
         }
@@ -948,22 +927,14 @@ public class CameraPreview extends AutoFitTextureView{
         }
 
         // Daniel (2016-12-07 10:56:34): Which means preview frame is invalid (No need to setPreviewCallback, so use setOneshotCallback method
-        if (mPreviewFrame == null || mPreviewFrame.length == 0) {
-            if (mCamera != null) {
-                mCamera.setOneShotPreviewCallback(new Camera.PreviewCallback() {
-                    @Override
-                    public void onPreviewFrame(byte[] data, Camera camera) {
-                        mPreviewFrame = data;
-                        captureDeprecatePicture();
-                    }
-                });
-            } else {
-                // Daniel (2016-12-07 11:11:34): mCamera is null which means, camera was already released
-                // (Activity or Fragment has been destroyed)
-            }
-        } else {
-            // Daniel (2016-12-07 11:00:47): if mPreviewFrame is valid then, use captureDeprecatePicture()
-            captureDeprecatePicture();
+        if (mCamera != null) {
+            mCamera.setOneShotPreviewCallback(new Camera.PreviewCallback() {
+                @Override
+                public void onPreviewFrame(byte[] data, Camera camera) {
+                    mPreviewFrame = data;
+                    captureDeprecatePicture();
+                }
+            });
         }
     }
 
@@ -984,7 +955,7 @@ public class CameraPreview extends AutoFitTextureView{
 
                             Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
 
-                            recreateToFile(bitmap);
+                            reCreateToFile(bitmap);
 
                             try {
                                 if (mCamera != null) {
@@ -1026,7 +997,7 @@ public class CameraPreview extends AutoFitTextureView{
                 byteArrayOutputStream.flush();
                 byteArrayOutputStream.close();
 
-                recreateToFile(bitmap);
+                reCreateToFile(bitmap);
 
                 // remove mPreviewFrame
                 mPreviewFrame = null;
@@ -1039,29 +1010,8 @@ public class CameraPreview extends AutoFitTextureView{
         }
     }
 
-    private void recreateToFile(Bitmap bitmap) {
-
-        // Daniel (2016-08-26 14:01:20): Current Device rotation
-        WindowManager windowManager = (WindowManager) getContext().getSystemService(Context.WINDOW_SERVICE);
-        int displayRotation = windowManager.getDefaultDisplay().getRotation();
-        LOG.d("Current device rotation : " + ORIENTATIONS.get(displayRotation));
-
-        int result = (mSensorOrientation - ORIENTATIONS.get(displayRotation) + 360) % 360;
-
-        Bitmap rotatedBitmap = null;
-
-        if (result % 360 != 0) {
-            rotatedBitmap = rotateImage(bitmap, result);
-            rotatedBitmap = cropImage(rotatedBitmap);
-        } else {
-            rotatedBitmap = cropImage(bitmap);
-        }
-
-        if (getLastOrientation(mLastOrientation) % 360 != 0)
-            rotatedBitmap = rotateImage(rotatedBitmap, getLastOrientation(mLastOrientation));
-
-        // TODO: There is issue with reverse left and right.. sorry. Execute this logic at the last moment.
-        rotatedBitmap = reverseSides(rotatedBitmap);
+    private void reCreateToFile(Bitmap bitmap) {
+        Bitmap targetBitmap = reCalculateBitmap(bitmap, false);
 
         File pictureFile = getOutputMediaFile();
         if (pictureFile == null) {
@@ -1070,8 +1020,8 @@ public class CameraPreview extends AutoFitTextureView{
         try {
             FileOutputStream fos = new FileOutputStream(pictureFile);
 
-            if (rotatedBitmap != null)
-                rotatedBitmap.compress(Bitmap.CompressFormat.JPEG, 95, fos);
+            if (targetBitmap != null)
+                targetBitmap.compress(Bitmap.CompressFormat.JPEG, 95, fos);
             else
                 bitmap.compress(Bitmap.CompressFormat.JPEG, 95, fos);
 
@@ -1085,9 +1035,9 @@ public class CameraPreview extends AutoFitTextureView{
 
             try {
                 // TODO: recycle Bitmap!!!
-                if (rotatedBitmap != null) {
-                    rotatedBitmap.recycle();
-                    rotatedBitmap = null;
+                if (targetBitmap != null) {
+                    targetBitmap.recycle();
+                    targetBitmap = null;
                 } else {
                     bitmap.recycle();
                     bitmap = null;
@@ -1099,6 +1049,31 @@ public class CameraPreview extends AutoFitTextureView{
             if (onTakePictureListener != null && pictureFile != null)
                 onTakePictureListener.onTakePicture(pictureFile);
         }
+    }
+
+    private Bitmap reCalculateBitmap(Bitmap bitmap, boolean isThumbnail) {
+        // Daniel (2016-08-26 14:01:20): Current Device rotation
+        int displayRotation = mDisplayRotation;
+        LOG.d("Current device rotation : " + ORIENTATIONS.get(displayRotation));
+
+        int result = (mSensorOrientation - ORIENTATIONS.get(displayRotation) + 360) % 360;
+
+        Bitmap reCalcBitmap = null;
+
+        if (result % 360 != 0) {
+            reCalcBitmap = rotateImage(bitmap, result);
+            reCalcBitmap = cropImage(reCalcBitmap);
+        } else {
+            reCalcBitmap = cropImage(bitmap);
+        }
+
+        if (getLastOrientation(mLastOrientation, isThumbnail) % 360 != 0)
+            reCalcBitmap = rotateImage(reCalcBitmap, getLastOrientation(mLastOrientation, isThumbnail));
+
+        if (mCameraLensType == Camera.CameraInfo.CAMERA_FACING_FRONT && !isThumbnail)
+            reCalcBitmap = reverseSides(reCalcBitmap);
+
+        return reCalcBitmap;
     }
 
     @Override
@@ -1155,35 +1130,6 @@ public class CameraPreview extends AutoFitTextureView{
         onTakePictureListener = listener;
     }
 
-    @Override
-    public void setOrientationEventListener(boolean isEnabled) {
-        isOrientationEventAvailable = isEnabled;
-
-        if (isEnabled) {
-            if (mOrientationEventListener == null) {
-                mOrientationEventListener = new OrientationEventListener(getContext(),
-                        SensorManager.SENSOR_DELAY_NORMAL) {
-                    @Override
-                    public void onOrientationChanged(int orientation) {
-//                        LOG.d("Orientation : " + orientation);
-                        if (orientation != -1)
-                            mLastOrientation = orientation;
-                    }
-                };
-            }
-
-            if (mOrientationEventListener != null && mOrientationEventListener.canDetectOrientation())
-                mOrientationEventListener.enable();
-        } else {
-            if (mOrientationEventListener != null) {
-                mOrientationEventListener.disable();
-                mOrientationEventListener = null;
-            }
-
-            mLastOrientation = 0;
-        }
-    }
-
     /**
      * You must call this method to release Camera
      */
@@ -1220,6 +1166,32 @@ public class CameraPreview extends AutoFitTextureView{
 			mCamera.setPreviewCallback(null);
             mCamera.release();
             mCamera = null;
+        }
+    }
+
+    private void setOrientationEventListener(boolean isEnabled) {
+        if (isEnabled) {
+            if (mOrientationEventListener == null) {
+                mOrientationEventListener = new OrientationEventListener(getContext(),
+                        SensorManager.SENSOR_DELAY_NORMAL) {
+                    @Override
+                    public void onOrientationChanged(int orientation) {
+//                        LOG.d("Orientation : " + orientation);
+                        if (orientation != -1)
+                            mLastOrientation = orientation;
+                    }
+                };
+            }
+
+            if (mOrientationEventListener != null && mOrientationEventListener.canDetectOrientation())
+                mOrientationEventListener.enable();
+        } else {
+            if (mOrientationEventListener != null) {
+                mOrientationEventListener.disable();
+                mOrientationEventListener = null;
+            }
+
+            mLastOrientation = 0;
         }
     }
 
