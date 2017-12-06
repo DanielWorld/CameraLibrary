@@ -135,6 +135,10 @@ public class CameraPreview extends AutoFitTextureView{
 
     @Override
     public void openCamera(SurfaceTexture surfaceTexture, int width, int height) {
+        if (!isAvailable()) {
+            LOG.w("TextureView isn't available! Can't openCamera()");
+            return;
+        }
         LOG.d("openCamera() : " + width + " , " + height);
 
         /**

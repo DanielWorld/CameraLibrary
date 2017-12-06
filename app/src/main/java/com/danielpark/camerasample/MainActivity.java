@@ -33,7 +33,6 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener, OnTakePictureListener, PermissionChecker.OnPermissionCheckerListener {
-    private final String TAG = MainActivity.class.getSimpleName();
 
     private AutoFitTextureView cameraPreview;
     private PermissionChecker permissionChecker;
@@ -66,7 +65,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         // Daniel (2016-08-23 10:45:00): Turn on CameraLogger Log switch
         CameraLogger.enable();
-        Logger.setLogState(true);
 
         try {
             cameraPreview =  CameraApiChecker.getInstance()
@@ -93,30 +91,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 }
             });
 
-        } catch (UnsupportedOperationException e){
-            Toast.makeText(MainActivity.this, e.getMessage(), Toast.LENGTH_SHORT).show();
-        } catch (IOException e) {
+        } catch (UnsupportedOperationException | IOException e){
             Toast.makeText(MainActivity.this, e.getMessage(), Toast.LENGTH_SHORT).show();
 
             finish();
         }
-
-        timer = new Timer();
-        timer.scheduleAtFixedRate(new TimerTask() {
-            @Override
-            public void run() {
-                Bitmap bitmap = cameraPreview.getThumbnail(0.7f);
-
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (bitmap != null)
-                            binding.thumbnail.setImageBitmap(bitmap);
-                    }
-                });
-
-            }
-        }, 5000, 300);
     }
 
     @Override
@@ -124,15 +103,31 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         super.onResume();
 
         try {
-//			// Daniel (2016-05-17 14:37:25): TextureView 여부를 체크한 뒤 , textureView open!
-            if (cameraPreview.isAvailable()) {
-                Logger.d(TAG, "TextureView is available!");
+            if (cameraPreview != null)
                 cameraPreview.openCamera(cameraPreview.getSurfaceTexture(), cameraPreview.getWidth(), cameraPreview.getHeight());
-            } else {
-                Logger.d(TAG, "TextureView is not available!");
-            }
         } catch (Exception e) {
             e.printStackTrace();
+        }
+
+        if (timer == null) {
+            timer = new Timer();
+            timer.scheduleAtFixedRate(new TimerTask() {
+                @Override
+                public void run() {
+                    if (cameraPreview == null) return;
+
+                    Bitmap bitmap = cameraPreview.getThumbnail(0.7f);
+
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (bitmap != null)
+                                binding.thumbnail.setImageBitmap(bitmap);
+                        }
+                    });
+
+                }
+            }, 5000, 10);
         }
     }
 
@@ -142,6 +137,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         if (cameraPreview != null)
             cameraPreview.releaseCamera();
+
+        if (timer != null) {
+            timer.cancel();
+            timer = null;
+        }
     }
 
     @TargetApi(Build.VERSION_CODES.M)
@@ -209,8 +209,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         if (cameraPreview != null)
             cameraPreview.finishCamera();
 
-        if (timer != null)
+        if (timer != null) {
             timer.cancel();
+            timer = null;
+        }
 
         super.onDestroy();
     }
